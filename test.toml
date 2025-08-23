@@ -1,0 +1,15 @@
+[package]
+name = "supertoml"
+version = "0.1.0"
+author = "Sean"
+debug = true
+
+[dependencies]
+clap = "4.0"
+toml = "0.8"
+serde_json = "1.0"
+
+[build]
+optimization = "release"
+parallel = true
+threads = 4
