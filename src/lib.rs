@@ -6,8 +6,7 @@ pub mod plugins;
 
 pub use error::SuperTomlError;
 pub use loader::{
-    TomlTable, load_toml_file, extract_table,
-    FromTomlValue, TomlTableExt,
+    TomlTable, load_toml_file,
 };
 pub use formatter::{format_as_toml, format_as_json, format_as_dotenv, format_as_exports};
-pub use resolver::{Plugin, Resolver};
+pub use resolver::{Plugin, Resolver, resolve_table_recursive};

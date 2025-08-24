@@ -150,14 +150,16 @@ impl Plugin for MyPlugin {
     }
     
     fn process(
-        &mut self,
-        values: &mut HashMap<String, toml::Value>,
+        &self,
+        resolver: &mut supertoml::Resolver,
         config: toml::Value,
     ) -> Result<(), SuperTomlError> {
         let config: MyPluginConfig = extract_config!(config, MyPluginConfig, self.name())?;
         
         // Use config.option1, config.option2, etc.
         // Custom processing logic here
+        // Access resolver.values, resolver.toml_file, etc.
+        // Call resolver.resolve_table_recursive() for recursive processing
         Ok(())
     }
 }
@@ -181,8 +183,8 @@ use supertoml::{Resolver, format_as_json};
 use supertoml::plugins::NoopPlugin;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let plugins: Vec<Box<dyn supertoml::Plugin>> = vec![
-        Box::new(NoopPlugin),
+    let plugins: Vec<&'static dyn supertoml::Plugin> = vec![
+        &NoopPlugin,
     ];
     
     let mut resolver = Resolver::new(plugins);
@@ -256,6 +258,8 @@ Extensible architecture for custom processing:
 - Simple `Plugin` trait with type-safe configuration extraction
 - `extract_config!` macro for easy deserialization
 - Support for any TOML data type as configuration
+- Full recursive resolution support - plugins can resolve other tables
+- Ownership transfer design to avoid Rust borrowing conflicts
 
 ### Data Flow
 
@@ -265,9 +269,20 @@ TOML File → Loader → Resolver → Plugins → Formatter → Output
 
 1. **Load**: Read and parse TOML file
 2. **Extract**: Extract specified table
-3. **Resolve**: Process through resolver and plugins
+3. **Resolve**: Process through resolver and plugins (with recursive resolution)
 4. **Format**: Convert to requested output format
 5. **Output**: Display or return formatted result
+
+### Recursive Resolution
+
+Plugins can trigger recursive resolution of other tables within the same TOML file:
+
+```rust
+// Inside a plugin's process method
+crate::resolve_table_recursive(resolver, &config.table)?;
+```
+
+This ensures that every table resolution goes through the complete resolver process, including plugin processing, even when referenced by other tables.
 
 ## Testing
 
@@ -330,7 +345,7 @@ export "key=value"
 
 ### Plugin Testing
 
-The integration test framework automatically includes the NoopPlugin for all tests:
+The integration test framework automatically includes both NoopPlugin and ReferencePlugin for all tests:
 
 ```toml
 [test]
@@ -341,7 +356,10 @@ table = "config"
 [config]
 app_name = "test-app"
 _.noop = { message = "Plugin executed", enabled = true }
+_.reference = { table = "other_table", prefix = "ref_" }
 ```
+
+This allows testing of both simple plugins and recursive resolution scenarios.
 
 ## Dependencies
 
@@ -377,7 +395,8 @@ supertoml/
 │   ├── resolver.rs      # Core resolution logic
 │   └── plugins/         # Plugin implementations
 │       ├── mod.rs       # Plugin module exports
-│       └── noop.rs      # Example noop plugin
+│       ├── noop.rs      # Example noop plugin
+│       └── reference.rs # Example reference plugin with recursive resolution
 ├── tests/
 │   ├── integration_tests.rs    # Test framework
 │   └── test_cases/            # Test case definitions
@@ -396,6 +415,15 @@ The `build.rs` script automatically generates integration tests from TOML files 
 2. **New Plugin**: Implement `Plugin` trait and add to plugins directory
 3. **New Error Type**: Add to `SuperTomlError` enum with appropriate display message
 4. **New Test Case**: Add TOML file to `tests/test_cases/` directory
+
+### Architecture Notes
+
+The resolver uses free functions instead of methods to avoid Rust borrowing conflicts:
+- `resolve_table_recursive()` - Main resolution logic
+- `process_plugins()` - Plugin processing
+- `extract_table_from_file()` - Table extraction
+
+This design allows plugins to access the resolver for recursive resolution while maintaining clean ownership semantics.
 
 ## Performance Notes
 

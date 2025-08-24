@@ -1,0 +1,34 @@
+[test]
+name = "Reference plugin functionality"
+description = "Test that reference plugin can load data from other tables"
+table = "target"
+
+[source]
+database_host = "localhost"
+database_port = 5432
+api_key = "secret123"
+
+[target]
+app_name = "my-app"
+version = "1.0.0"
+_.reference = { table = "source", prefix = "db_" }
+
+[expected.toml]
+content = '''
+app_name = "my-app"
+db_api_key = "secret123"
+db_database_host = "localhost"
+db_database_port = 5432
+version = "1.0.0"
+'''
+
+[expected.json]
+content = '''
+{
+  "app_name": "my-app",
+  "db_api_key": "secret123",
+  "db_database_host": "localhost",
+  "db_database_port": 5432,
+  "version": "1.0.0"
+}
+'''
