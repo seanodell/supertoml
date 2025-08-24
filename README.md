@@ -117,17 +117,103 @@ SuperTOML can also be used as a Rust library:
 use supertoml::{Resolver, format_as_json};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create a resolver with no plugins
     let mut resolver = Resolver::new(vec![]);
-    
-    // Resolve a table from a TOML file
     let values = resolver.resolve_table("config.toml", "database")?;
-    
-    // Format as JSON
     let json_output = format_as_json(&values)?;
     println!("{}", json_output);
-    
     Ok(())
+}
+```
+
+## Plugin System
+
+### Creating Plugins
+
+Plugins allow custom processing of table data with type-safe configuration:
+
+```rust
+use supertoml::{Plugin, SuperTomlError, extract_config};
+use std::collections::HashMap;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct MyPluginConfig {
+    option1: String,
+    option2: Option<i32>,
+}
+
+struct MyPlugin;
+
+impl Plugin for MyPlugin {
+    fn name(&self) -> &str {
+        "my_plugin"
+    }
+    
+    fn process(
+        &mut self,
+        values: &mut HashMap<String, toml::Value>,
+        config: toml::Value,
+    ) -> Result<(), SuperTomlError> {
+        let config: MyPluginConfig = extract_config!(config, MyPluginConfig, self.name())?;
+        
+        // Use config.option1, config.option2, etc.
+        // Custom processing logic here
+        Ok(())
+    }
+}
+```
+
+### Plugin Configuration
+
+Plugins are configured in TOML files using a special `_` key within the table:
+
+```toml
+[my_table]
+key1 = "value1"
+key2 = "value2"
+_.my_plugin = { option1 = "config_value", option2 = 42 }
+```
+
+### Using Plugins
+
+```rust
+use supertoml::{Resolver, format_as_json};
+use supertoml::plugins::NoopPlugin;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let plugins: Vec<Box<dyn supertoml::Plugin>> = vec![
+        Box::new(NoopPlugin),
+    ];
+    
+    let mut resolver = Resolver::new(plugins);
+    let values = resolver.resolve_table("config.toml", "my_table")?;
+    let json_output = format_as_json(&values)?;
+    println!("{}", json_output);
+    Ok(())
+}
+```
+
+### Plugin Config Types
+
+Your plugin config can be any valid TOML type:
+
+```toml
+# Simple string
+_.simple = "hello"
+
+# Number
+_.count = 42
+
+# Boolean
+_.enabled = true
+
+# String array
+_.list = ["item1", "item2", "item3"]
+
+# Complex structure
+_.complex = {
+    database = { host = "localhost", port = 5432 },
+    cache = { ttl = 300, size = 1000 }
 }
 ```
 
@@ -167,9 +253,9 @@ Comprehensive error types:
 
 #### 5. **Plugin System** (`src/resolver.rs`)
 Extensible architecture for custom processing:
-- Plugin trait definition
-- Plugin data processing
-- Error handling and reporting
+- Simple `Plugin` trait with type-safe configuration extraction
+- `extract_config!` macro for easy deserialization
+- Support for any TOML data type as configuration
 
 ### Data Flow
 
@@ -183,41 +269,6 @@ TOML File → Loader → Resolver → Plugins → Formatter → Output
 4. **Format**: Convert to requested output format
 5. **Output**: Display or return formatted result
 
-### Plugin System
-
-Plugins allow custom processing of table data. To create a plugin:
-
-```rust
-use supertoml::{Plugin, SuperTomlError};
-use std::collections::HashMap;
-
-struct MyPlugin;
-
-impl Plugin for MyPlugin {
-    fn name(&self) -> &str {
-        "my_plugin"
-    }
-    
-    fn process(
-        &mut self,
-        values: &mut HashMap<String, toml::Value>,
-        plugin_data: toml::Value,
-    ) -> Result<(), SuperTomlError> {
-        // Custom processing logic here
-        Ok(())
-    }
-}
-```
-
-Plugins are configured in TOML files using a special `_` key within the table:
-
-```toml
-[my_table]
-key1 = "value1"
-key2 = "value2"
-_.my_plugin = { option1 = "config_value" }
-```
-
 ## Testing
 
 The project includes comprehensive testing:
@@ -226,6 +277,7 @@ The project includes comprehensive testing:
 - **Integration tests**: `tests/integration_tests.rs`
 - **Test cases**: `tests/test_cases/*.toml`
 - **Generated tests**: Build script automatically generates tests from test case files
+- **Plugin tests**: Noop plugin included in all integration tests
 
 ### Running Tests
 
@@ -235,6 +287,9 @@ cargo test
 
 # Run specific test
 cargo test test_basic_strings
+
+# Run with output
+cargo test test_noop_plugin -- --nocapture
 ```
 
 ### Test Case Format
@@ -273,6 +328,21 @@ export "key=value"
 '''
 ```
 
+### Plugin Testing
+
+The integration test framework automatically includes the NoopPlugin for all tests:
+
+```toml
+[test]
+name = "Plugin test"
+description = "Test plugin functionality"
+table = "config"
+
+[config]
+app_name = "test-app"
+_.noop = { message = "Plugin executed", enabled = true }
+```
+
 ## Dependencies
 
 - **clap**: Command-line argument parsing with derive macros
@@ -305,8 +375,9 @@ supertoml/
 │   ├── loader.rs        # TOML loading utilities
 │   ├── formatter.rs     # Output formatting
 │   ├── resolver.rs      # Core resolution logic
-│   ├── plugins/         # Plugin implementations (empty)
-│   └── bin/             # Additional binaries (empty)
+│   └── plugins/         # Plugin implementations
+│       ├── mod.rs       # Plugin module exports
+│       └── noop.rs      # Example noop plugin
 ├── tests/
 │   ├── integration_tests.rs    # Test framework
 │   └── test_cases/            # Test case definitions
@@ -322,7 +393,7 @@ The `build.rs` script automatically generates integration tests from TOML files 
 ### Adding New Features
 
 1. **New Output Format**: Add to `OutputFormat` enum and implement in `formatter.rs`
-2. **New Plugin**: Implement `Plugin` trait and register with resolver
+2. **New Plugin**: Implement `Plugin` trait and add to plugins directory
 3. **New Error Type**: Add to `SuperTomlError` enum with appropriate display message
 4. **New Test Case**: Add TOML file to `tests/test_cases/` directory
 

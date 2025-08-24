@@ -1,7 +1,8 @@
 use supertoml::{
     extract_table, format_as_dotenv, format_as_exports, format_as_json, format_as_toml,
-    load_toml_file, SuperTomlError, TomlTableExt, Resolver,
+    load_toml_file, SuperTomlError, TomlTableExt, Resolver, Plugin,
 };
+use supertoml::plugins::NoopPlugin;
 
 #[derive(Debug)]
 struct TestCase {
@@ -51,7 +52,8 @@ fn run_test_file(test_file: &str) {
         test_case.name, test_case.description
     );
 
-    let mut resolver = Resolver::new(vec![]);
+    let plugins: Vec<Box<dyn Plugin>> = vec![Box::new(NoopPlugin)];
+    let mut resolver = Resolver::new(plugins);
     let resolved_values = resolver.resolve_table(test_file, &test_case.table).unwrap_or_else(|e| {
         panic!(
             "Failed to resolve table '{}' from {}: {}",

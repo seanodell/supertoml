@@ -2,13 +2,31 @@ use std::collections::{HashMap, HashSet};
 use crate::error::SuperTomlError;
 use crate::loader::{load_toml_file, TomlTable};
 
+#[macro_export]
+macro_rules! extract_config {
+    ($config:expr, $config_type:ty) => {
+        $config.try_into::<$config_type>()
+            .map_err(|e| $crate::SuperTomlError::PluginDeserialization {
+                plugin_name: "unknown".to_string(),
+                error: format!("{}", e),
+            })
+    };
+    ($config:expr, $config_type:ty, $plugin_name:expr) => {
+        $config.try_into::<$config_type>()
+            .map_err(|e| $crate::SuperTomlError::PluginDeserialization {
+                plugin_name: $plugin_name.to_string(),
+                error: format!("{}", e),
+            })
+    };
+}
+
 pub trait Plugin {
     fn name(&self) -> &str;
     
     fn process(
         &mut self,
         values: &mut HashMap<String, toml::Value>,
-        plugin_data: toml::Value,
+        config: toml::Value,
     ) -> Result<(), SuperTomlError>;
 }
 

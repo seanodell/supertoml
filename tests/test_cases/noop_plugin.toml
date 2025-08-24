@@ -1,0 +1,34 @@
+[test]
+name = "Noop plugin functionality"
+description = "Test that noop plugin processes configuration correctly"
+table = "config"
+
+[config]
+app_name = "test-app"
+version = "2.0.0"
+debug = false
+
+_.noop = { message = "Noop plugin executed", enabled = true }
+
+[expected.toml]
+content = '''
+app_name = "test-app"
+debug = false
+version = "2.0.0"
+'''
+
+[expected.json]
+content = '''
+{
+  "app_name": "test-app",
+  "debug": false,
+  "version": "2.0.0"
+}
+'''
+
+[expected.dotenv]
+content = '''
+app_name=test-app
+debug=false
+version=2.0.0
+'''

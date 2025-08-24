@@ -2,6 +2,7 @@ mod error;
 mod loader;
 mod formatter;
 mod resolver;
+pub mod plugins;
 
 pub use error::SuperTomlError;
 pub use loader::{
