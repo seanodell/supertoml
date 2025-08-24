@@ -5,15 +5,13 @@ table = "target_table"
 
 [expected.toml]
 content = """
-ref_key1 = "value1"
-ref_key2 = 42
+key1 = "value1"
+key2 = 42
 """
 
 [source_table]
 key1 = "value1"
 key2 = 42
-_.noop = { enabled = true, message = "Processing source table" }
 
 [target_table]
 _.reference = { table = "source_table", prefix = "ref_" }
-_.noop = { enabled = true, message = "Processing target table" }

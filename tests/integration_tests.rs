@@ -1,8 +1,8 @@
 use supertoml::{
     format_as_dotenv, format_as_exports, format_as_json, format_as_toml,
-    load_toml_file, SuperTomlError, Resolver, Plugin,
+    SuperTomlError, Resolver, Plugin,
 };
-use supertoml::plugins::{NoopPlugin, ReferencePlugin};
+use supertoml::loader::load_toml_file;
 
 #[derive(Debug)]
 struct TestCase {

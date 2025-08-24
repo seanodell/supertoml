@@ -11,24 +11,24 @@ api_key = "secret123"
 [target]
 app_name = "my-app"
 version = "1.0.0"
-_.reference = { table = "source", prefix = "db_" }
+_.reference = { table = "source" }
 
 [expected.toml]
 content = '''
+api_key = "secret123"
 app_name = "my-app"
-db_api_key = "secret123"
-db_database_host = "localhost"
-db_database_port = 5432
+database_host = "localhost"
+database_port = 5432
 version = "1.0.0"
 '''
 
 [expected.json]
 content = '''
 {
+  "api_key": "secret123",
   "app_name": "my-app",
-  "db_api_key": "secret123",
-  "db_database_host": "localhost",
-  "db_database_port": 5432,
+  "database_host": "localhost",
+  "database_port": 5432,
   "version": "1.0.0"
 }
 '''

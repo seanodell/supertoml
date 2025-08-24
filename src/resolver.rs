@@ -64,7 +64,7 @@ impl Resolver {
     }
 }
 
-// Move processing logic to free functions to avoid self borrowing issues
+
 pub fn resolve_table_recursive(resolver: &mut Resolver, table_name: &str) -> Result<(), SuperTomlError> {
     if resolver.processed_tables.contains(table_name) {
         return Err(SuperTomlError::CycleDetected(table_name.to_string()));
@@ -80,13 +80,10 @@ pub fn resolve_table_recursive(resolver: &mut Resolver, table_name: &str) -> Res
         }
     }
 
-    if let Some(plugins_table) = table.get("_").and_then(|v| v.as_table()) {
-        process_plugins(resolver, &mut table_values, plugins_table)?;
-    }
+    let plugins_table = table.get("_").and_then(|v| v.as_table());
+    process_plugins(resolver, &mut table_values, plugins_table)?;
 
-    for (key, value) in table_values {
-        resolver.values.insert(key, value);
-    }
+
 
     Ok(())
 }
@@ -94,25 +91,29 @@ pub fn resolve_table_recursive(resolver: &mut Resolver, table_name: &str) -> Res
 fn process_plugins(
     resolver: &mut Resolver, 
     table_values: &mut HashMap<String, toml::Value>, 
-    plugins_table: &TomlTable
+    plugins_table: Option<&TomlTable>
 ) -> Result<(), SuperTomlError> {
     let plugins_to_process = resolver.plugins.clone();
     
     for plugin in plugins_to_process {
         let plugin_name = plugin.name().to_string();
+        
+        let config = if let Some(plugins_table) = plugins_table {
+            plugins_table.get(&plugin_name).cloned().unwrap_or(toml::Value::Table(TomlTable::new()))
+        } else {
+            toml::Value::Table(TomlTable::new())
+        };
 
-        if let Some(plugin_data) = plugins_table.get(&plugin_name) {
-            plugin
-                .process(resolver, table_values, plugin_data.clone())
-                .map_err(|e| match e {
-                    SuperTomlError::PluginError { .. }
-                    | SuperTomlError::PluginDeserialization { .. } => e,
-                    other => SuperTomlError::PluginError {
-                        plugin_name: plugin_name.to_string(),
-                        error: format!("{}", other),
-                    },
-                })?;
-        }
+        plugin
+            .process(resolver, table_values, config)
+            .map_err(|e| match e {
+                SuperTomlError::PluginError { .. }
+                | SuperTomlError::PluginDeserialization { .. } => e,
+                other => SuperTomlError::PluginError {
+                    plugin_name: plugin_name.to_string(),
+                    error: format!("{}", other),
+                },
+            })?;
     }
 
     Ok(())

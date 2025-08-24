@@ -1,13 +1,6 @@
 
-use serde::Deserialize;
-use crate::{Plugin, SuperTomlError, extract_config};
+use crate::{Plugin, SuperTomlError};
 use std::collections::HashMap;
-
-#[derive(Debug, Deserialize)]
-pub struct NoopConfig {
-    pub message: Option<String>,
-    pub enabled: bool,
-}
 
 pub struct NoopPlugin;
 
@@ -18,20 +11,14 @@ impl Plugin for NoopPlugin {
     
     fn process(
         &self,
-        _resolver: &mut crate::Resolver,
+        resolver: &mut crate::Resolver,
         table_values: &mut HashMap<String, toml::Value>,
-        config: toml::Value,
+        _config: toml::Value,
     ) -> Result<(), SuperTomlError> {
-        let config: NoopConfig = extract_config!(config, NoopConfig, self.name())?;
+        println!("NoopPlugin: Running with {} values", table_values.len());
         
-        if !config.enabled {
-            return Ok(());
-        }
-        
-        if let Some(message) = config.message {
-            println!("NoopPlugin: {}", message);
-        } else {
-            println!("NoopPlugin: Running with {} values", table_values.len());
+        for (key, value) in table_values.iter() {
+            resolver.values.insert(key.clone(), value.clone());
         }
         
         Ok(())
@@ -45,39 +32,19 @@ mod tests {
     use std::collections::HashMap;
     
     #[test]
-    fn test_noop_plugin_with_message() {
+    fn test_noop_plugin() {
         let plugin = NoopPlugin;
         let mut resolver = crate::Resolver::new(vec![]);
         let mut table_values = HashMap::new();
         table_values.insert("key1".to_string(), Value::String("value1".to_string()));
         
-        let config = Value::try_from(toml::toml! {
-            message = "Hello from noop!"
-            enabled = true
-        }).unwrap();
+        let config = Value::Table(toml::map::Map::new());
         
         let result = plugin.process(&mut resolver, &mut table_values, config);
         assert!(result.is_ok());
         
         assert_eq!(table_values.len(), 1);
         assert_eq!(table_values.get("key1").unwrap().as_str().unwrap(), "value1");
-    }
-    
-    #[test]
-    fn test_noop_plugin_disabled() {
-        let plugin = NoopPlugin;
-        let mut resolver = crate::Resolver::new(vec![]);
-        let mut table_values = HashMap::new();
-        table_values.insert("key1".to_string(), Value::String("value1".to_string()));
-        
-        let config = Value::try_from(toml::toml! {
-            message = "This should not print"
-            enabled = false
-        }).unwrap();
-        
-        let result = plugin.process(&mut resolver, &mut table_values, config);
-        assert!(result.is_ok());
-        
-        assert_eq!(table_values.len(), 1);
+        assert_eq!(resolver.values.get("key1").unwrap().as_str().unwrap(), "value1");
     }
 }
