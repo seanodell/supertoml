@@ -343,6 +343,24 @@ export "key=value"
 '''
 ```
 
+### Error Testing
+
+Test cases can also test for expected errors by adding an `expected_error` field:
+
+```toml
+[test]
+name = "Error test"
+description = "Test that specific errors are raised"
+table = "problematic_table"
+expected_error = "Cycle detected"
+
+[problematic_table]
+# This will cause a cycle detection error
+_.reference = { table = "problematic_table" }
+```
+
+The `expected_error` field accepts a regex pattern for partial matching of error messages.
+
 ### Plugin Testing
 
 The integration test framework automatically includes both NoopPlugin and ReferencePlugin for all tests:

@@ -1,0 +1,17 @@
+[test]
+name = "circular_reference"
+description = "Test that circular references between tables are detected and prevented"
+table = "table_a"
+expected_error = "Cycle detected"
+
+[table_a]
+key1 = "value1"
+_.reference = { table = "table_b", prefix = "b_" }
+
+[table_b]
+key2 = "value2"
+_.reference = { table = "table_c", prefix = "c_" }
+
+[table_c]
+key3 = "value3"
+_.reference = { table = "table_a", prefix = "a_" }

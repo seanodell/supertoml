@@ -13,6 +13,7 @@ struct TestCase {
     expected_json: Option<String>,
     expected_dotenv: Option<String>,
     expected_exports: Option<String>,
+    expected_error: Option<String>,
 }
 
 fn load_test_case(test_file: &str) -> Result<TestCase, SuperTomlError> {
@@ -44,6 +45,10 @@ fn load_test_case(test_file: &str) -> Result<TestCase, SuperTomlError> {
         format_table.get("content")?.as_str()?.trim().to_string().into()
     };
 
+    let expected_error = test_table.get("expected_error")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+
     Ok(TestCase {
         name,
         description,
@@ -52,6 +57,7 @@ fn load_test_case(test_file: &str) -> Result<TestCase, SuperTomlError> {
         expected_json: get_expected_content("json"),
         expected_dotenv: get_expected_content("dotenv"),
         expected_exports: get_expected_content("exports"),
+        expected_error,
     })
 }
 
@@ -68,51 +74,69 @@ fn run_test_file(test_file: &str) {
         &NoopPlugin as &dyn Plugin,
         &ReferencePlugin as &dyn Plugin,
     ]);
-    let resolved_values = resolver.resolve_table(test_file, &test_case.table).unwrap_or_else(|e| {
-        panic!(
-            "Failed to resolve table '{}' from {}: {}",
-            test_case.table, test_file, e
-        )
-    });
+    
+    let result = resolver.resolve_table(test_file, &test_case.table);
 
-    if let Some(expected) = test_case.expected_toml {
-        let actual = format_as_toml(&resolved_values).unwrap();
-        assert_eq!(
-            actual.trim(),
-            expected,
-            "TOML output mismatch in {}",
-            test_file
-        );
-    }
+    if let Some(expected_error) = &test_case.expected_error {
+        match result {
+            Ok(_) => panic!("Expected error matching '{}' but got success", expected_error),
+            Err(e) => {
+                let error_str = e.to_string();
+                if !regex::Regex::new(expected_error).unwrap().is_match(&error_str) {
+                    panic!(
+                        "Error '{}' does not match expected pattern '{}'",
+                        error_str, expected_error
+                    );
+                }
+            }
+        }
+    } else {
+        let resolved_values = result.unwrap_or_else(|e| {
+            panic!(
+                "Failed to resolve table '{}' from {}: {}",
+                test_case.table, test_file, e
+            )
+        });
 
-    if let Some(expected) = test_case.expected_json {
-        let actual = format_as_json(&resolved_values).unwrap();
-        assert_eq!(
-            actual.trim(),
-            expected,
-            "JSON output mismatch in {}",
-            test_file
-        );
-    }
+        if let Some(expected) = test_case.expected_toml {
+            let actual = format_as_toml(&resolved_values).unwrap();
+            assert_eq!(
+                actual.trim(),
+                expected,
+                "TOML output mismatch in {}",
+                test_file
+            );
+        }
 
-    if let Some(expected) = test_case.expected_dotenv {
-        let actual = format_as_dotenv(&resolved_values).unwrap();
-        assert_eq!(
-            actual.trim(),
-            expected,
-            "Dotenv output mismatch in {}",
-            test_file
-        );
-    }
+        if let Some(expected) = test_case.expected_json {
+            let actual = format_as_json(&resolved_values).unwrap();
+            assert_eq!(
+                actual.trim(),
+                expected,
+                "JSON output mismatch in {}",
+                test_file
+            );
+        }
 
-    if let Some(expected) = test_case.expected_exports {
-        let actual = format_as_exports(&resolved_values).unwrap();
-        assert_eq!(
-            actual.trim(),
-            expected,
-            "Exports output mismatch in {}",
-            test_file
-        );
+        if let Some(expected) = test_case.expected_dotenv {
+            let actual = format_as_dotenv(&resolved_values).unwrap();
+            assert_eq!(
+                actual.trim(),
+                expected,
+                "Dotenv output mismatch in {}",
+                test_file
+            );
+        }
+
+        if let Some(expected) = test_case.expected_exports {
+            let actual = format_as_exports(&resolved_values).unwrap();
+            assert_eq!(
+                actual.trim(),
+                expected,
+                "Exports output mismatch in {}",
+                test_file
+            );
+        }
     }
 }
 
