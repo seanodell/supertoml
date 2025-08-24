@@ -1,7 +1,6 @@
-
 use supertoml::{
     extract_table, format_as_dotenv, format_as_exports, format_as_json, format_as_toml,
-    load_toml_file, SuperTomlError,
+    load_toml_file, SuperTomlError, TomlTableExt,
 };
 
 #[derive(Debug)]
@@ -17,42 +16,18 @@ struct TestCase {
 
 fn load_test_case(test_file: &str) -> Result<TestCase, SuperTomlError> {
     let toml_value = load_toml_file(test_file)?;
-    let root_table = toml_value
-        .as_table()
-        .ok_or_else(|| SuperTomlError::InvalidTableType("root".to_string()))?;
+    let test_table = extract_table(&toml_value, "test")?;
 
-    let test_table = root_table
-        .get("test")
-        .ok_or_else(|| SuperTomlError::TableNotFound("test".to_string()))?
-        .as_table()
-        .ok_or_else(|| SuperTomlError::InvalidTableType("test".to_string()))?;
-
-    let name = test_table
-        .get("name")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| SuperTomlError::TableNotFound("test.name".to_string()))?
-        .to_string();
-
-    let description = test_table
-        .get("description")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| SuperTomlError::TableNotFound("test.description".to_string()))?
-        .to_string();
-
-    let table = test_table
-        .get("table")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| SuperTomlError::TableNotFound("test.table".to_string()))?
-        .to_string();
-
-    let expected = root_table.get("expected").and_then(|v| v.as_table());
+    let name: String = test_table.get_field("name")?;
+    let description: String = test_table.get_field("description")?;
+    let table: String = test_table.get_field("table")?;
 
     let get_expected_content = |format: &str| -> Option<String> {
-        expected?
-            .get(format)?
-            .as_table()?
-            .get("content")?
-            .as_str()
+        let expected_table = extract_table(&toml_value, "expected").ok()?;
+        let format_table = extract_table(&toml::Value::Table(expected_table), format).ok()?;
+        format_table
+            .get_field::<String>("content")
+            .ok()
             .map(|s| s.trim().to_string())
     };
 
