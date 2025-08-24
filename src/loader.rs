@@ -21,7 +21,6 @@ pub fn extract_table(toml_value: &toml::Value, table_name: &str) -> Result<TomlT
         .ok_or_else(|| SuperTomlError::InvalidTableType(table_name.to_string()))
 }
 
-/// Trait for types that can be extracted from TOML values
 pub trait FromTomlValue: Sized {
     fn from_toml_value(value: &toml::Value) -> Option<Self>;
 }
@@ -50,9 +49,7 @@ impl FromTomlValue for bool {
     }
 }
 
-/// Trait to add object-oriented field extraction methods to TomlTable  
 pub trait TomlTableExt {
-    /// Extract a field - returns unwrapped value or error
     fn get_field<T: FromTomlValue>(&self, field_name: &str) -> Result<T, SuperTomlError>;
 }
 
@@ -63,5 +60,4 @@ impl TomlTableExt for TomlTable {
             .ok_or_else(|| SuperTomlError::TableNotFound(field_name.to_string()))
     }
 }
-
 

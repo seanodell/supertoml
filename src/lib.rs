@@ -1,6 +1,7 @@
 mod error;
 mod loader;
 mod formatter;
+mod resolver;
 
 pub use error::SuperTomlError;
 pub use loader::{
@@ -8,3 +9,4 @@ pub use loader::{
     FromTomlValue, TomlTableExt,
 };
 pub use formatter::{format_as_toml, format_as_json, format_as_dotenv, format_as_exports};
+pub use resolver::{Plugin, Resolver};

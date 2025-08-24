@@ -1,38 +1,48 @@
+use std::collections::HashMap;
 use crate::error::SuperTomlError;
 use crate::loader::TomlTable;
 
-pub fn format_as_toml(table: &TomlTable) -> Result<String, SuperTomlError> {
-    let value = toml::Value::Table(table.clone());
+fn sorted_keys(values: &HashMap<String, toml::Value>) -> Vec<&String> {
+    let mut keys: Vec<&String> = values.keys().collect();
+    keys.sort();
+    keys
+}
+
+pub fn format_as_toml(values: &HashMap<String, toml::Value>) -> Result<String, SuperTomlError> {
+    let mut table = TomlTable::new();
+    for key in sorted_keys(values) {
+        table.insert(key.clone(), values[key].clone());
+    }
+    
+    let value = toml::Value::Table(table);
     Ok(toml::to_string(&value).unwrap())
 }
 
-pub fn format_as_json(table: &TomlTable) -> Result<String, SuperTomlError> {
-    let json_value = toml_to_json_value(table);
+pub fn format_as_json(values: &HashMap<String, toml::Value>) -> Result<String, SuperTomlError> {
+    let json_value = resolved_values_to_json_value(values);
     Ok(serde_json::to_string_pretty(&json_value).unwrap())
 }
 
-pub fn format_as_dotenv(table: &TomlTable) -> Result<String, SuperTomlError> {
-    let mut lines = Vec::new();
-    for (key, value) in table {
-        let string_value = value_to_string(value);
-        lines.push(format!("{}={}", key, string_value));
-    }
+pub fn format_as_dotenv(values: &HashMap<String, toml::Value>) -> Result<String, SuperTomlError> {
+    let lines: Vec<String> = sorted_keys(values)
+        .into_iter()
+        .map(|key| format!("{}={}", key, value_to_string(&values[key])))
+        .collect();
     Ok(lines.join("\n"))
 }
 
-pub fn format_as_exports(table: &TomlTable) -> Result<String, SuperTomlError> {
-    let mut lines = Vec::new();
-    for (key, value) in table {
-        let string_value = value_to_string(value);
-        lines.push(format!("export \"{}={}\"", key, string_value));
-    }
+pub fn format_as_exports(values: &HashMap<String, toml::Value>) -> Result<String, SuperTomlError> {
+    let lines: Vec<String> = sorted_keys(values)
+        .into_iter()
+        .map(|key| format!("export \"{}={}\"", key, value_to_string(&values[key])))
+        .collect();
     Ok(lines.join("\n"))
 }
 
-fn toml_to_json_value(table: &TomlTable) -> serde_json::Value {
+fn resolved_values_to_json_value(values: &HashMap<String, toml::Value>) -> serde_json::Value {
     let mut json_map = serde_json::Map::new();
-    for (key, value) in table {
-        json_map.insert(key.clone(), toml_value_to_json(value));
+    for key in sorted_keys(values) {
+        json_map.insert(key.clone(), toml_value_to_json(&values[key]));
     }
     serde_json::Value::Object(json_map)
 }

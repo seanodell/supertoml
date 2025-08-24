@@ -12,13 +12,8 @@ enum OutputFormat {
 #[command(name = "supertoml")]
 #[command(about = "A super TOML tool")]
 struct Args {
-    /// Path to the TOML file
     file: String,
-    
-    /// Name of the table to process
     table: String,
-    
-    /// Output format
     #[arg(short, long, value_enum, default_value = "toml")]
     output: OutputFormat,
 }
@@ -36,13 +31,13 @@ fn main() {
 }
 
 fn run(args: &Args) -> Result<String, supertoml::SuperTomlError> {
-    let toml_value = supertoml::load_toml_file(&args.file)?;
-    let table = supertoml::extract_table(&toml_value, &args.table)?;
+    let mut resolver = supertoml::Resolver::new(vec![]);
+    let resolved_values = resolver.resolve_table(&args.file, &args.table)?;
     
     match args.output {
-        OutputFormat::Toml => supertoml::format_as_toml(&table),
-        OutputFormat::Json => supertoml::format_as_json(&table),
-        OutputFormat::Dotenv => supertoml::format_as_dotenv(&table),
-        OutputFormat::Exports => supertoml::format_as_exports(&table),
+        OutputFormat::Toml => supertoml::format_as_toml(&resolved_values),
+        OutputFormat::Json => supertoml::format_as_json(&resolved_values),
+        OutputFormat::Dotenv => supertoml::format_as_dotenv(&resolved_values),
+        OutputFormat::Exports => supertoml::format_as_exports(&resolved_values),
     }
 }

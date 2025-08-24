@@ -1,6 +1,6 @@
 use supertoml::{
     extract_table, format_as_dotenv, format_as_exports, format_as_json, format_as_toml,
-    load_toml_file, SuperTomlError, TomlTableExt,
+    load_toml_file, SuperTomlError, TomlTableExt, Resolver,
 };
 
 #[derive(Debug)]
@@ -51,18 +51,16 @@ fn run_test_file(test_file: &str) {
         test_case.name, test_case.description
     );
 
-    let toml_value = load_toml_file(test_file)
-        .unwrap_or_else(|e| panic!("Failed to load test file {}: {}", test_file, e));
-
-    let table = extract_table(&toml_value, &test_case.table).unwrap_or_else(|e| {
+    let mut resolver = Resolver::new(vec![]);
+    let resolved_values = resolver.resolve_table(test_file, &test_case.table).unwrap_or_else(|e| {
         panic!(
-            "Failed to extract table '{}' from {}: {}",
+            "Failed to resolve table '{}' from {}: {}",
             test_case.table, test_file, e
         )
     });
 
     if let Some(expected) = test_case.expected_toml {
-        let actual = format_as_toml(&table).unwrap();
+        let actual = format_as_toml(&resolved_values).unwrap();
         assert_eq!(
             actual.trim(),
             expected,
@@ -72,7 +70,7 @@ fn run_test_file(test_file: &str) {
     }
 
     if let Some(expected) = test_case.expected_json {
-        let actual = format_as_json(&table).unwrap();
+        let actual = format_as_json(&resolved_values).unwrap();
         assert_eq!(
             actual.trim(),
             expected,
@@ -82,7 +80,7 @@ fn run_test_file(test_file: &str) {
     }
 
     if let Some(expected) = test_case.expected_dotenv {
-        let actual = format_as_dotenv(&table).unwrap();
+        let actual = format_as_dotenv(&resolved_values).unwrap();
         assert_eq!(
             actual.trim(),
             expected,
@@ -92,7 +90,7 @@ fn run_test_file(test_file: &str) {
     }
 
     if let Some(expected) = test_case.expected_exports {
-        let actual = format_as_exports(&table).unwrap();
+        let actual = format_as_exports(&resolved_values).unwrap();
         assert_eq!(
             actual.trim(),
             expected,
