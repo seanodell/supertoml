@@ -28,6 +28,7 @@ pub trait Plugin {
     fn process(
         &self,
         resolver: &mut Resolver,
+        table_values: &mut HashMap<String, toml::Value>,
         config: toml::Value,
     ) -> Result<(), SuperTomlError>;
 }
@@ -70,22 +71,31 @@ pub fn resolve_table_recursive(resolver: &mut Resolver, table_name: &str) -> Res
     }
 
     resolver.processed_tables.insert(table_name.to_string());
-    let table = extract_table_from_file(resolver, table_name)?;
+    let table = get_table_from_loaded_file(resolver, table_name)?;
 
+    let mut table_values: HashMap<String, toml::Value> = HashMap::new();
     for (key, value) in &table {
         if key != "_" {
-            resolver.values.insert(key.clone(), value.clone());
+            table_values.insert(key.clone(), value.clone());
         }
     }
 
     if let Some(plugins_table) = table.get("_").and_then(|v| v.as_table()) {
-        process_plugins(resolver, plugins_table)?;
+        process_plugins(resolver, &mut table_values, plugins_table)?;
+    }
+
+    for (key, value) in table_values {
+        resolver.values.insert(key, value);
     }
 
     Ok(())
 }
 
-fn process_plugins(resolver: &mut Resolver, plugins_table: &TomlTable) -> Result<(), SuperTomlError> {
+fn process_plugins(
+    resolver: &mut Resolver, 
+    table_values: &mut HashMap<String, toml::Value>, 
+    plugins_table: &TomlTable
+) -> Result<(), SuperTomlError> {
     let plugins_to_process = resolver.plugins.clone();
     
     for plugin in plugins_to_process {
@@ -93,7 +103,7 @@ fn process_plugins(resolver: &mut Resolver, plugins_table: &TomlTable) -> Result
 
         if let Some(plugin_data) = plugins_table.get(&plugin_name) {
             plugin
-                .process(resolver, plugin_data.clone())
+                .process(resolver, table_values, plugin_data.clone())
                 .map_err(|e| match e {
                     SuperTomlError::PluginError { .. }
                     | SuperTomlError::PluginDeserialization { .. } => e,
@@ -108,7 +118,7 @@ fn process_plugins(resolver: &mut Resolver, plugins_table: &TomlTable) -> Result
     Ok(())
 }
 
-fn extract_table_from_file(resolver: &Resolver, table_name: &str) -> Result<TomlTable, SuperTomlError> {
+fn get_table_from_loaded_file(resolver: &Resolver, table_name: &str) -> Result<TomlTable, SuperTomlError> {
     let toml_file = resolver
         .toml_file
         .as_ref()
