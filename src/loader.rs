@@ -1,6 +1,6 @@
+use crate::error::SuperTomlError;
 use std::fs;
 use std::path::Path;
-use crate::error::SuperTomlError;
 
 pub type TomlTable = toml::map::Map<String, toml::Value>;
 

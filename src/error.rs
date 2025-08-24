@@ -16,13 +16,19 @@ impl std::fmt::Display for SuperTomlError {
             SuperTomlError::TomlParse(e) => write!(f, "Failed to parse TOML: {}", e),
             SuperTomlError::TableNotFound(name) => write!(f, "Table '{}' not found", name),
             SuperTomlError::InvalidTableType(name) => write!(f, "Item '{}' is not a table", name),
-            SuperTomlError::CycleDetected(table) => write!(f, "Cycle detected when processing table '{}'", table),
+            SuperTomlError::CycleDetected(table) => {
+                write!(f, "Cycle detected when processing table '{}'", table)
+            }
             SuperTomlError::PluginDeserialization { plugin_name, error } => {
-                write!(f, "Plugin '{}' failed to deserialize data: {}", plugin_name, error)
-            },
+                write!(
+                    f,
+                    "Plugin '{}' failed to deserialize data: {}",
+                    plugin_name, error
+                )
+            }
             SuperTomlError::PluginError { plugin_name, error } => {
                 write!(f, "Plugin '{}' error: {}", plugin_name, error)
-            },
+            }
         }
     }
 }

@@ -3,5 +3,5 @@ pub mod reference;
 pub mod templating;
 
 pub use noop::NoopPlugin;
-pub use reference::{ReferencePlugin, ReferenceConfig};
+pub use reference::{ReferenceConfig, ReferencePlugin};
 pub use templating::TemplatingPlugin;

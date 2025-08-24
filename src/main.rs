@@ -20,7 +20,7 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    
+
     match run(&args) {
         Ok(output) => println!("{}", output),
         Err(e) => {
@@ -33,7 +33,7 @@ fn main() {
 fn run(args: &Args) -> Result<String, supertoml::SuperTomlError> {
     let mut resolver = supertoml::Resolver::new(vec![]);
     let resolved_values = resolver.resolve_table(&args.file, &args.table)?;
-    
+
     match args.output {
         OutputFormat::Toml => supertoml::format_as_toml(&resolved_values),
         OutputFormat::Json => supertoml::format_as_json(&resolved_values),

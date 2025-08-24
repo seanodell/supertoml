@@ -148,14 +148,14 @@ impl Plugin for MyPlugin {
     fn name(&self) -> &str {
         "my_plugin"
     }
-    
+
     fn process(
         &self,
         resolver: &mut supertoml::Resolver,
         config: toml::Value,
     ) -> Result<(), SuperTomlError> {
         let config: MyPluginConfig = extract_config!(config, MyPluginConfig, self.name())?;
-        
+
         // Use config.option1, config.option2, etc.
         // Custom processing logic here
         // Access resolver.values, resolver.toml_file, etc.
@@ -186,7 +186,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let plugins: Vec<&'static dyn supertoml::Plugin> = vec![
         &NoopPlugin,
     ];
-    
+
     let mut resolver = Resolver::new(plugins);
     let values = resolver.resolve_table("config.toml", "my_table")?;
     let json_output = format_as_json(&values)?;

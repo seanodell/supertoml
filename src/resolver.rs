@@ -64,8 +64,10 @@ impl Resolver {
     }
 }
 
-
-pub fn resolve_table_recursive(resolver: &mut Resolver, table_name: &str) -> Result<(), SuperTomlError> {
+pub fn resolve_table_recursive(
+    resolver: &mut Resolver,
+    table_name: &str,
+) -> Result<(), SuperTomlError> {
     if resolver.processed_tables.contains(table_name) {
         return Err(SuperTomlError::CycleDetected(table_name.to_string()));
     }
@@ -83,23 +85,24 @@ pub fn resolve_table_recursive(resolver: &mut Resolver, table_name: &str) -> Res
     let plugins_table = table.get("_").and_then(|v| v.as_table());
     process_plugins(resolver, &mut table_values, plugins_table)?;
 
-
-
     Ok(())
 }
 
 fn process_plugins(
-    resolver: &mut Resolver, 
-    table_values: &mut HashMap<String, toml::Value>, 
-    plugins_table: Option<&TomlTable>
+    resolver: &mut Resolver,
+    table_values: &mut HashMap<String, toml::Value>,
+    plugins_table: Option<&TomlTable>,
 ) -> Result<(), SuperTomlError> {
     let plugins_to_process = resolver.plugins.clone();
-    
+
     for plugin in plugins_to_process {
         let plugin_name = plugin.name().to_string();
-        
+
         let config = if let Some(plugins_table) = plugins_table {
-            plugins_table.get(&plugin_name).cloned().unwrap_or(toml::Value::Table(TomlTable::new()))
+            plugins_table
+                .get(&plugin_name)
+                .cloned()
+                .unwrap_or(toml::Value::Table(TomlTable::new()))
         } else {
             toml::Value::Table(TomlTable::new())
         };
@@ -119,7 +122,10 @@ fn process_plugins(
     Ok(())
 }
 
-fn get_table_from_loaded_file(resolver: &Resolver, table_name: &str) -> Result<TomlTable, SuperTomlError> {
+fn get_table_from_loaded_file(
+    resolver: &Resolver,
+    table_name: &str,
+) -> Result<TomlTable, SuperTomlError> {
     let toml_file = resolver
         .toml_file
         .as_ref()

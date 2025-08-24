@@ -1,9 +1,9 @@
-use supertoml::{
-    format_as_dotenv, format_as_exports, format_as_json, format_as_toml,
-    SuperTomlError, Resolver, Plugin,
-};
 use supertoml::loader::load_toml_file;
 use supertoml::plugins::{NoopPlugin, ReferencePlugin, TemplatingPlugin};
+use supertoml::{
+    format_as_dotenv, format_as_exports, format_as_json, format_as_toml, Plugin, Resolver,
+    SuperTomlError,
+};
 
 #[derive(Debug)]
 struct TestCase {
@@ -19,23 +19,28 @@ struct TestCase {
 
 fn load_test_case(test_file: &str) -> Result<TestCase, SuperTomlError> {
     let toml_value = load_toml_file(test_file)?;
-    let root_table = toml_value.as_table()
+    let root_table = toml_value
+        .as_table()
         .ok_or_else(|| SuperTomlError::InvalidTableType("root".to_string()))?;
-    
-    let test_table = root_table.get("test")
+
+    let test_table = root_table
+        .get("test")
         .ok_or_else(|| SuperTomlError::TableNotFound("test".to_string()))?
         .as_table()
         .ok_or_else(|| SuperTomlError::InvalidTableType("test".to_string()))?;
 
-    let name = test_table.get("name")
+    let name = test_table
+        .get("name")
         .and_then(|v| v.as_str())
         .ok_or_else(|| SuperTomlError::TableNotFound("name".to_string()))?
         .to_string();
-    let description = test_table.get("description")
+    let description = test_table
+        .get("description")
         .and_then(|v| v.as_str())
         .ok_or_else(|| SuperTomlError::TableNotFound("description".to_string()))?
         .to_string();
-    let table = test_table.get("table")
+    let table = test_table
+        .get("table")
         .and_then(|v| v.as_str())
         .ok_or_else(|| SuperTomlError::TableNotFound("table".to_string()))?
         .to_string();
@@ -43,10 +48,16 @@ fn load_test_case(test_file: &str) -> Result<TestCase, SuperTomlError> {
     let get_expected_content = |format: &str| -> Option<String> {
         let expected_table = root_table.get("expected")?.as_table()?;
         let format_table = expected_table.get(format)?.as_table()?;
-        format_table.get("content")?.as_str()?.trim().to_string().into()
+        format_table
+            .get("content")?
+            .as_str()?
+            .trim()
+            .to_string()
+            .into()
     };
 
-    let expected_error = test_table.get("expected_error")
+    let expected_error = test_table
+        .get("expected_error")
         .and_then(|v| v.as_str())
         .map(|s| s.to_string());
 
@@ -76,15 +87,21 @@ fn run_test_file(test_file: &str) {
         &ReferencePlugin as &dyn Plugin,
         &TemplatingPlugin as &dyn Plugin,
     ]);
-    
+
     let result = resolver.resolve_table(test_file, &test_case.table);
 
     if let Some(expected_error) = &test_case.expected_error {
         match result {
-            Ok(_) => panic!("Expected error matching '{}' but got success", expected_error),
+            Ok(_) => panic!(
+                "Expected error matching '{}' but got success",
+                expected_error
+            ),
             Err(e) => {
                 let error_str = e.to_string();
-                if !regex::Regex::new(expected_error).unwrap().is_match(&error_str) {
+                if !regex::Regex::new(expected_error)
+                    .unwrap()
+                    .is_match(&error_str)
+                {
                     panic!(
                         "Error '{}' does not match expected pattern '{}'",
                         error_str, expected_error
