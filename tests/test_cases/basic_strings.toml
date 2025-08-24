@@ -1,0 +1,39 @@
+[test]
+name = "Basic string values"
+description = "Test simple key-value pairs with strings"
+table = "data"
+
+[data]
+app_name = "supertoml"
+version = "1.0.0"
+debug = true
+
+[expected.toml]
+content = '''
+app_name = "supertoml"
+debug = true
+version = "1.0.0"
+'''
+
+[expected.json]
+content = '''
+{
+  "app_name": "supertoml",
+  "debug": true,
+  "version": "1.0.0"
+}
+'''
+
+[expected.dotenv]
+content = '''
+app_name=supertoml
+debug=true
+version=1.0.0
+'''
+
+[expected.exports]
+content = '''
+export "app_name=supertoml"
+export "debug=true"
+export "version=1.0.0"
+'''

@@ -1,0 +1,35 @@
+[test]
+name = "Mixed data types"
+description = "Test various TOML data types together"
+table = "config"
+
+[config]
+name = "test-app"
+version = 2
+enabled = true
+pi = 3.14159
+tags = ["rust", "toml", "parser"]
+
+[expected.json]
+content = '''
+{
+  "enabled": true,
+  "name": "test-app",
+  "pi": 3.14159,
+  "tags": [
+    "rust",
+    "toml",
+    "parser"
+  ],
+  "version": 2
+}
+'''
+
+[expected.dotenv]
+content = '''
+enabled=true
+name=test-app
+pi=3.14159
+tags=["rust","toml","parser"]
+version=2
+'''
