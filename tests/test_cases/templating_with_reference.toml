@@ -1,0 +1,55 @@
+[test]
+name = "Jinja templating with reference plugin"
+description = "Test that jinja templates work with values from referenced tables"
+table = "app_config"
+
+[context]
+app_name = "my-awesome-app"
+version = "1.2.3"
+db_user = "admin"
+db_password = "secret123"
+db_host = "localhost"
+db_port = 5432
+db_name = "myapp"
+
+[app_config]
+database_url = "postgresql://{{ db_user }}:{{ db_password }}@{{ db_host }}:{{ db_port }}/{{ db_name }}"
+static_value = "this should not change"
+number_value = 42
+boolean_value = true
+artifact_name = "{{ app_name }}-{{ version }}"
+_.reference = { table = "context" }
+
+[expected.toml]
+content = '''
+app_name = "my-awesome-app"
+artifact_name = "my-awesome-app-1.2.3"
+boolean_value = true
+database_url = "postgresql://admin:secret123@localhost:5432/myapp"
+db_host = "localhost"
+db_name = "myapp"
+db_password = "secret123"
+db_port = 5432
+db_user = "admin"
+number_value = 42
+static_value = "this should not change"
+version = "1.2.3"
+'''
+
+[expected.json]
+content = '''
+{
+  "app_name": "my-awesome-app",
+  "artifact_name": "my-awesome-app-1.2.3",
+  "boolean_value": true,
+  "database_url": "postgresql://admin:secret123@localhost:5432/myapp",
+  "db_host": "localhost",
+  "db_name": "myapp",
+  "db_password": "secret123",
+  "db_port": 5432,
+  "db_user": "admin",
+  "number_value": 42,
+  "static_value": "this should not change",
+  "version": "1.2.3"
+}
+'''

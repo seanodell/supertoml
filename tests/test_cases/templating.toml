@@ -1,0 +1,55 @@
+[test]
+name = "Jinja templating functionality"
+description = "Test that jinja templates in string values are processed correctly"
+table = "app_config"
+
+[app_config]
+static_value = "this should not change"
+number_value = 42
+boolean_value = true
+
+# Minijinja features without variables
+uppercase_text = "{{ 'hello world' | upper }}"
+lowercase_text = "{{ 'HELLO WORLD' | lower }}"
+title_case = "{{ 'hello world' | title }}"
+trimmed_text = "{{ '  hello world  ' | trim }}"
+replaced_text = "{{ 'hello world' | replace('hello', 'goodbye') }}"
+length_text = "{{ 'hello world' | length }}"
+conditional_text = "{% if true %}This is true{% else %}This is false{% endif %}"
+loop_text = "{% for i in range(1, 4) %}{{ i }}{% if not loop.last %}, {% endif %}{% endfor %}"
+complex_text = "{{ 'hello' | upper }} {{ 'WORLD' | lower }} - Count: {% for i in range(3) %}{{ i + 1 }}{% endfor %}"
+
+[expected.toml]
+content = '''
+boolean_value = true
+complex_text = "HELLO world - Count: 123"
+conditional_text = "This is true"
+length_text = "11"
+loop_text = "1, 2, 3"
+lowercase_text = "hello world"
+number_value = 42
+replaced_text = "goodbye world"
+static_value = "this should not change"
+title_case = "Hello World"
+trimmed_text = "hello world"
+uppercase_text = "HELLO WORLD"
+'''
+
+[expected.json]
+content = '''
+{
+  "boolean_value": true,
+  "complex_text": "HELLO world - Count: 123",
+  "conditional_text": "This is true",
+  "length_text": "11",
+  "loop_text": "1, 2, 3",
+  "lowercase_text": "hello world",
+  "number_value": 42,
+  "replaced_text": "goodbye world",
+  "static_value": "this should not change",
+  "title_case": "Hello World",
+  "trimmed_text": "hello world",
+  "uppercase_text": "HELLO WORLD"
+}
+'''
+

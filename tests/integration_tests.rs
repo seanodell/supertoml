@@ -3,6 +3,7 @@ use supertoml::{
     SuperTomlError, Resolver, Plugin,
 };
 use supertoml::loader::load_toml_file;
+use supertoml::plugins::{NoopPlugin, ReferencePlugin, TemplatingPlugin};
 
 #[derive(Debug)]
 struct TestCase {
@@ -73,6 +74,7 @@ fn run_test_file(test_file: &str) {
     let mut resolver = Resolver::new(vec![
         &NoopPlugin as &dyn Plugin,
         &ReferencePlugin as &dyn Plugin,
+        &TemplatingPlugin as &dyn Plugin,
     ]);
     
     let result = resolver.resolve_table(test_file, &test_case.table);
