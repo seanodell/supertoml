@@ -14,8 +14,6 @@ impl Plugin for NoopPlugin {
         table_values: &mut HashMap<String, toml::Value>,
         _config: toml::Value,
     ) -> Result<(), SuperTomlError> {
-        println!("NoopPlugin: Running with {} values", table_values.len());
-
         for (key, value) in table_values.iter() {
             resolver.values.insert(key.clone(), value.clone());
         }

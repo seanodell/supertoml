@@ -38,7 +38,7 @@ fn process_value_with_jinja(
 
     match value {
         toml::Value::String(s) => {
-            if s.contains("{{") || s.contains("{%") {
+            if s.contains("{{") || s.contains("{%") || s.contains("{#") {
                 let template =
                     env.template_from_str(s)
                         .map_err(|e| SuperTomlError::PluginError {

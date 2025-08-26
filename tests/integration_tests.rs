@@ -99,7 +99,7 @@ fn run_test_file(test_file: &str) {
             Err(e) => {
                 let error_str = e.to_string();
                 if !regex::Regex::new(expected_error)
-                    .unwrap()
+                    .expect("Invalid regex pattern in test")
                     .is_match(&error_str)
                 {
                     panic!(
@@ -110,15 +110,13 @@ fn run_test_file(test_file: &str) {
             }
         }
     } else {
-        let resolved_values = result.unwrap_or_else(|e| {
-            panic!(
-                "Failed to resolve table '{}' from {}: {}",
-                test_case.table, test_file, e
-            )
-        });
+        let resolved_values = result.expect(&format!(
+            "Failed to resolve table '{}' from {}",
+            test_case.table, test_file
+        ));
 
         if let Some(expected) = test_case.expected_toml {
-            let actual = format_as_toml(&resolved_values).unwrap();
+            let actual = format_as_toml(&resolved_values).expect("Failed to format as TOML");
             assert_eq!(
                 actual.trim(),
                 expected,
@@ -128,7 +126,7 @@ fn run_test_file(test_file: &str) {
         }
 
         if let Some(expected) = test_case.expected_json {
-            let actual = format_as_json(&resolved_values).unwrap();
+            let actual = format_as_json(&resolved_values).expect("Failed to format as JSON");
             assert_eq!(
                 actual.trim(),
                 expected,
@@ -138,7 +136,7 @@ fn run_test_file(test_file: &str) {
         }
 
         if let Some(expected) = test_case.expected_dotenv {
-            let actual = format_as_dotenv(&resolved_values).unwrap();
+            let actual = format_as_dotenv(&resolved_values).expect("Failed to format as dotenv");
             assert_eq!(
                 actual.trim(),
                 expected,
@@ -148,7 +146,7 @@ fn run_test_file(test_file: &str) {
         }
 
         if let Some(expected) = test_case.expected_exports {
-            let actual = format_as_exports(&resolved_values).unwrap();
+            let actual = format_as_exports(&resolved_values).expect("Failed to format as exports");
             assert_eq!(
                 actual.trim(),
                 expected,

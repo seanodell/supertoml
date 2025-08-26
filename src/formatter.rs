@@ -15,12 +15,13 @@ pub fn format_as_toml(values: &HashMap<String, toml::Value>) -> Result<String, S
     }
 
     let value = toml::Value::Table(table);
-    Ok(toml::to_string(&value).unwrap())
+    toml::to_string(&value).map_err(|e| SuperTomlError::SerializationError(e.to_string()))
 }
 
 pub fn format_as_json(values: &HashMap<String, toml::Value>) -> Result<String, SuperTomlError> {
     let json_value = resolved_values_to_json_value(values);
-    Ok(serde_json::to_string_pretty(&json_value).unwrap())
+    serde_json::to_string_pretty(&json_value)
+        .map_err(|e| SuperTomlError::SerializationError(e.to_string()))
 }
 
 pub fn format_as_dotenv(values: &HashMap<String, toml::Value>) -> Result<String, SuperTomlError> {
@@ -51,9 +52,9 @@ fn toml_value_to_json(value: &toml::Value) -> serde_json::Value {
     match value {
         toml::Value::String(s) => serde_json::Value::String(s.clone()),
         toml::Value::Integer(i) => serde_json::Value::Number((*i).into()),
-        toml::Value::Float(f) => {
-            serde_json::Value::Number(serde_json::Number::from_f64(*f).unwrap())
-        }
+        toml::Value::Float(f) => serde_json::Value::Number(
+            serde_json::Number::from_f64(*f).unwrap_or_else(|| serde_json::Number::from(0)),
+        ),
         toml::Value::Boolean(b) => serde_json::Value::Bool(*b),
         toml::Value::Array(arr) => {
             let json_arr: Vec<serde_json::Value> = arr.iter().map(toml_value_to_json).collect();

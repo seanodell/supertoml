@@ -3,7 +3,7 @@ use std::fs;
 use std::path::Path;
 
 fn main() {
-    let out_dir = env::var_os("OUT_DIR").unwrap();
+    let out_dir = env::var_os("OUT_DIR").expect("OUT_DIR environment variable not set");
     let dest_path = Path::new(&out_dir).join("generated_tests.rs");
 
     let test_files = glob::glob("tests/test_cases/*.toml")
@@ -33,6 +33,6 @@ fn {}() {{
         ));
     }
 
-    fs::write(&dest_path, generated_tests).unwrap();
+    fs::write(&dest_path, generated_tests).expect("Failed to write generated tests file");
     println!("cargo:rerun-if-changed=tests/test_cases");
 }

@@ -7,6 +7,7 @@ pub enum SuperTomlError {
     CycleDetected(String),
     PluginDeserialization { plugin_name: String, error: String },
     PluginError { plugin_name: String, error: String },
+    SerializationError(String),
 }
 
 impl std::fmt::Display for SuperTomlError {
@@ -28,6 +29,9 @@ impl std::fmt::Display for SuperTomlError {
             }
             SuperTomlError::PluginError { plugin_name, error } => {
                 write!(f, "Plugin '{}' error: {}", plugin_name, error)
+            }
+            SuperTomlError::SerializationError(error) => {
+                write!(f, "Serialization error: {}", error)
             }
         }
     }
