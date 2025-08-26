@@ -1,3 +1,12 @@
 [tools]
 rust = "1.89.0"
 pre-commit = "3.7.0"
+
+[tasks]
+build = "cargo build --release"
+test = "cargo test"
+check = "cargo check && cargo clippy"
+fmt = "cargo fmt"
+fmt-check = "cargo fmt -- --check"
+clean = "cargo clean"
+docker-test = "docker run --rm -v $(pwd):/app -w /app rust:latest sh -c 'cargo test && cargo build --release && ./target/release/supertoml --help'"

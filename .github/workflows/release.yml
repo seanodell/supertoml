@@ -1,0 +1,140 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          # macOS
+          - os: macos-latest
+            arch: x86_64
+            target: x86_64-apple-darwin
+            artifact_name: supertoml-macos-x86_64
+          - os: macos-latest
+            arch: aarch64
+            target: aarch64-apple-darwin
+            artifact_name: supertoml-macos-aarch64
+
+          # Windows
+          - os: windows-latest
+            arch: x86_64
+            target: x86_64-pc-windows-msvc
+            artifact_name: supertoml-windows-x86_64.exe
+
+          # Linux
+          - os: ubuntu-latest
+            arch: x86_64
+            target: x86_64-unknown-linux-gnu
+            artifact_name: supertoml-linux-x86_64
+          - os: ubuntu-latest
+            arch: aarch64
+            target: aarch64-unknown-linux-gnu
+            artifact_name: supertoml-linux-aarch64
+          - os: ubuntu-latest
+            arch: x86
+            target: i686-unknown-linux-gnu
+            artifact_name: supertoml-linux-i686
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build release binary
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+          # Strip debug symbols to reduce binary size
+          if [ "${{ runner.os }}" != "Windows" ]; then
+            strip target/${{ matrix.target }}/release/supertoml
+          fi
+
+      - name: Run tests
+        run: cargo test --target ${{ matrix.target }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: target/${{ matrix.target }}/release/supertoml*
+
+  create-release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            supertoml-macos-x86_64
+            supertoml-macos-aarch64
+            supertoml-windows-x86_64.exe
+            supertoml-linux-x86_64
+            supertoml-linux-aarch64
+            supertoml-linux-i686
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test-binaries:
+    name: Test Binaries
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Linux binary
+        uses: actions/download-artifact@v3
+        with:
+          name: supertoml-linux-x86_64
+
+      - name: Make executable
+        run: chmod +x supertoml-linux-x86_64
+
+      - name: Test basic functionality
+        run: |
+          # Test help
+          ./supertoml-linux-x86_64 --help
+
+          # Test with a simple TOML file
+          echo 'test = "value"' > test.toml
+          ./supertoml-linux-x86_64 test.toml test
