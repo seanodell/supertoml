@@ -152,6 +152,7 @@ impl Plugin for MyPlugin {
     fn process(
         &self,
         resolver: &mut supertoml::Resolver,
+        table_values: &mut HashMap<String, toml::Value>,
         config: toml::Value,
     ) -> Result<(), SuperTomlError> {
         let config: MyPluginConfig = extract_config!(config, MyPluginConfig, self.name())?;
@@ -160,10 +161,30 @@ impl Plugin for MyPlugin {
         // Custom processing logic here
         // Access resolver.values, resolver.toml_file, etc.
         // Call resolver.resolve_table_recursive() for recursive processing
+
+        // Important: Plugins can modify table_values, but should not drain them
+        // as they may be passed to other plugins in the processing chain
+
+        // Add values to resolver.values if needed
+        for (key, value) in table_values.iter() {
+            resolver.values.insert(key.clone(), value.clone());
+        }
+
         Ok(())
     }
 }
 ```
+
+### Plugin Behavior
+
+Plugins receive three parameters:
+- `resolver`: Access to the resolver for recursive table resolution and global values
+- `table_values`: The current table's key-value pairs (can be modified but not drained)
+- `config`: Plugin-specific configuration from the TOML file
+
+**Important**: Plugins should not drain `table_values` because they may be passed to other plugins in the processing chain. Use `.iter()` to copy values to `resolver.values` rather than `.drain()`.
+
+If a plugin modifies `table_values`, it should also update `resolver.values` to match the modified values, so that if later plugins re-add the table values to `resolver.values`, they get the modified values, not the original ones.
 
 ### Plugin Configuration
 
@@ -180,11 +201,15 @@ _.my_plugin = { option1 = "config_value", option2 = 42 }
 
 ```rust
 use supertoml::{Resolver, format_as_json};
-use supertoml::plugins::NoopPlugin;
+use supertoml::plugins::{NoopPlugin, ReferencePlugin, TemplatingPlugin, BeforePlugin, AfterPlugin};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let plugins: Vec<&'static dyn supertoml::Plugin> = vec![
         &NoopPlugin,
+        &ReferencePlugin,
+        &TemplatingPlugin,
+        &BeforePlugin,
+        &AfterPlugin,
     ];
 
     let mut resolver = Resolver::new(plugins);
@@ -193,6 +218,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", json_output);
     Ok(())
 }
+```
+
+### Built-in Plugins
+
+SuperTOML comes with several built-in plugins:
+
+#### NoopPlugin
+A simple plugin that adds all table values to `resolver.values`. Always runs and requires no configuration.
+
+#### ReferencePlugin
+Resolves another table before processing the current table. Configuration:
+```toml
+_.reference = { table = "other_table" }
+```
+
+#### TemplatingPlugin
+Processes string values through Minijinja templating using `resolver.values` as context. Always runs and requires no configuration.
+
+#### BeforePlugin
+Resolves multiple tables before processing the current table. Configuration:
+```toml
+_.before = ["table1", "table2", "table3"]
+```
+
+#### AfterPlugin
+Resolves multiple tables after processing the current table. Does not add current table values to `resolver.values`. Configuration:
+```toml
+_.after = ["table1", "table2", "table3"]
 ```
 
 ### Plugin Config Types
@@ -363,7 +416,7 @@ The `expected_error` field accepts a regex pattern for partial matching of error
 
 ### Plugin Testing
 
-The integration test framework automatically includes both NoopPlugin and ReferencePlugin for all tests:
+The integration test framework automatically includes all built-in plugins for tests:
 
 ```toml
 [test]
@@ -373,11 +426,12 @@ table = "config"
 
 [config]
 app_name = "test-app"
-_.noop = { message = "Plugin executed", enabled = true }
-_.reference = { table = "other_table", prefix = "ref_" }
+_.reference = { table = "other_table" }
+_.before = ["setup", "init"]
+_.after = ["cleanup", "logging"]
 ```
 
-This allows testing of both simple plugins and recursive resolution scenarios.
+This allows testing of various plugin combinations and recursive resolution scenarios.
 
 ## Dependencies
 
@@ -385,6 +439,7 @@ This allows testing of both simple plugins and recursive resolution scenarios.
 - **toml**: TOML parsing and serialization
 - **serde_json**: JSON handling and pretty printing
 - **serde**: Serialization framework
+- **minijinja**: Template engine for string interpolation and templating plugin
 - **glob**: File pattern matching (build-time)
 
 ## Error Handling
@@ -453,11 +508,11 @@ This design allows plugins to access the resolver for recursive resolution while
 ## Future Enhancements
 
 Potential areas for expansion:
-- Built-in plugins for common transformations
 - Configuration file support for default plugins
 - Streaming support for large TOML files
-- Template interpolation support
 - Environment variable substitution
+- Additional output formats (YAML, XML, etc.)
+- Plugin configuration validation
 
 ## License
 
