@@ -1,0 +1,74 @@
+[test]
+name = "after_plugin"
+description = "Test the after plugin with post-processing table resolution"
+table = "main"
+
+[main]
+_.before = ["database", "api"]
+_.after = ["logging", "metrics", "cleanup"]
+app_name = "my_app"
+version = "1.0.0"
+database_url = "postgresql://{{db_host}}:{{db_port}}/{{db_name}}"
+api_key = "{{api_secret}}"
+user_count = "{{active_users}}"
+session_timeout = "{{timeout_seconds}}"
+
+[database]
+host = "localhost"
+port = 5432
+name = "myapp_prod"
+user = "app_user"
+password = "secret123"
+
+[api]
+secret = "sk-1234567890abcdef"
+endpoint = "https://api.example.com"
+timeout = 30
+
+[logging]
+level = "info"
+format = "json"
+output = "stdout"
+retention_days = 30
+log_file = "/var/log/{{app_name}}.log"
+app_name = "{{app_name}}"
+version = "{{version}}"
+
+[metrics]
+enabled = true
+interval = 60
+endpoint = "https://metrics.example.com"
+api_key = "metrics-secret-key"
+active_users = 1250
+timeout_seconds = 300
+app_identifier = "{{app_name}}-{{version}}"
+database_connection = "{{database_url}}"
+
+[cleanup]
+enabled = true
+schedule = "daily"
+retention_policy = "keep_30_days"
+backup_before_delete = true
+temp_files_pattern = "*.tmp"
+app_log_file = "{{log_file}}"
+app_metrics_key = "{{api_key}}"
+
+[expected.toml.content]
+app_name = "my_app"
+version = "1.0.0"
+database_url = "postgresql://localhost:5432/myapp_prod"
+api_key = "sk-1234567890abcdef"
+user_count = "1250"
+session_timeout = "300"
+
+[expected.json.content]
+content = """
+{
+  "app_name": "my_app",
+  "version": "1.0.0",
+  "database_url": "postgresql://localhost:5432/myapp_prod",
+  "api_key": "sk-1234567890abcdef",
+  "user_count": "1250",
+  "session_timeout": "300"
+}
+"""
