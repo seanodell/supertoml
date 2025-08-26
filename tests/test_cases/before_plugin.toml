@@ -1,0 +1,58 @@
+[test]
+name = "before_plugin"
+description = "Test the before plugin with multiple table resolution"
+table = "main"
+
+[main]
+_.before = ["database", "api", "features", "environment"]
+app_name = "my_app"
+version = "1.0.0"
+database_url = "postgresql://{{db_host}}:{{db_port}}/{{db_name}}"
+api_key = "{{api_secret}}"
+feature_flags = ["{{feature_a}}", "{{feature_b}}", "{{feature_c}}"]
+config = { env = "{{environment}}", debug = "{{debug_mode}}" }
+
+[database]
+host = "localhost"
+port = 5432
+name = "myapp_prod"
+user = "app_user"
+password = "secret123"
+
+[api]
+secret = "sk-1234567890abcdef"
+endpoint = "https://api.example.com"
+timeout = 30
+
+[features]
+a = true
+b = false
+c = true
+
+[environment]
+environment = "production"
+debug_mode = false
+log_level = "info"
+
+[expected.toml.content]
+app_name = "my_app"
+version = "1.0.0"
+database_url = "postgresql://localhost:5432/myapp_prod"
+api_key = "sk-1234567890abcdef"
+feature_flags = ["true", "false", "true"]
+config = { env = "production", debug = "false" }
+
+[expected.json.content]
+content = """
+{
+  "app_name": "my_app",
+  "version": "1.0.0",
+  "database_url": "postgresql://localhost:5432/myapp_prod",
+  "api_key": "sk-1234567890abcdef",
+  "feature_flags": ["true", "false", "true"],
+  "config": {
+    "env": "production",
+    "debug": false
+  }
+}
+"""
