@@ -117,7 +117,12 @@ SuperTOML can also be used as a Rust library:
 use supertoml::{Resolver, format_as_json};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut resolver = Resolver::new(vec![]);
+    // Use standard plugins (before, templating, after)
+    let mut resolver = Resolver::new(vec![
+        &supertoml::plugins::BeforePlugin as &dyn supertoml::Plugin,
+        &supertoml::plugins::TemplatingPlugin as &dyn supertoml::Plugin,
+        &supertoml::plugins::AfterPlugin as &dyn supertoml::Plugin,
+    ]);
     let values = resolver.resolve_table("config.toml", "database")?;
     let json_output = format_as_json(&values)?;
     println!("{}", json_output);
@@ -199,17 +204,35 @@ _.my_plugin = { option1 = "config_value", option2 = 42 }
 
 ### Using Plugins
 
+#### Standard Plugins (Recommended)
 ```rust
 use supertoml::{Resolver, format_as_json};
-use supertoml::plugins::{NoopPlugin, ReferencePlugin, TemplatingPlugin, BeforePlugin, AfterPlugin};
+use supertoml::plugins::{TemplatingPlugin, BeforePlugin, AfterPlugin};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let plugins: Vec<&'static dyn supertoml::Plugin> = vec![
+        &BeforePlugin,
+        &TemplatingPlugin,
+        &AfterPlugin,
+    ];
+
+    let mut resolver = Resolver::new(plugins);
+    let values = resolver.resolve_table("config.toml", "my_table")?;
+    let json_output = format_as_json(&values)?;
+    println!("{}", json_output);
+    Ok(())
+}
+```
+
+#### Development/Testing Plugins
+```rust
+use supertoml::{Resolver, format_as_json};
+use supertoml::plugins::{NoopPlugin, ReferencePlugin};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let plugins: Vec<&'static dyn supertoml::Plugin> = vec![
         &NoopPlugin,
         &ReferencePlugin,
-        &TemplatingPlugin,
-        &BeforePlugin,
-        &AfterPlugin,
     ];
 
     let mut resolver = Resolver::new(plugins);
@@ -222,31 +245,38 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Built-in Plugins
 
-SuperTOML comes with several built-in plugins:
+SuperTOML comes with several built-in plugins, categorized as follows:
 
-#### NoopPlugin
-A simple plugin that adds all table values to `resolver.values`. Always runs and requires no configuration.
+#### Standard Plugins (Included by Default)
+These plugins are automatically included when using SuperTOML and provide core functionality:
 
-#### ReferencePlugin
-Resolves another table before processing the current table. Configuration:
-```toml
-_.reference = { table = "other_table" }
-```
-
-#### TemplatingPlugin
+**TemplatingPlugin**
 Processes string values through Minijinja templating using `resolver.values` as context. Always runs and requires no configuration.
 
-#### BeforePlugin
+**BeforePlugin**
 Resolves multiple tables before processing the current table. Configuration:
 ```toml
 _.before = ["table1", "table2", "table3"]
 ```
 
-#### AfterPlugin
+**AfterPlugin**
 Resolves multiple tables after processing the current table. Does not add current table values to `resolver.values`. Configuration:
 ```toml
 _.after = ["table1", "table2", "table3"]
 ```
+
+#### Development/Testing Plugins
+These plugins are primarily used for testing, development, or specific use cases:
+
+**NoopPlugin**
+A simple plugin that adds all table values to `resolver.values`. Always runs and requires no configuration. Useful for testing and development.
+
+**ReferencePlugin**
+Resolves another table before processing the current table. Configuration:
+```toml
+_.reference = { table = "other_table" }
+```
+Useful for testing recursive resolution scenarios.
 
 ### Plugin Config Types
 

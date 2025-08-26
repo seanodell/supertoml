@@ -31,7 +31,11 @@ fn main() {
 }
 
 fn run(args: &Args) -> Result<String, supertoml::SuperTomlError> {
-    let mut resolver = supertoml::Resolver::new(vec![]);
+    let mut resolver = supertoml::Resolver::new(vec![
+        &supertoml::plugins::BeforePlugin as &dyn supertoml::Plugin,
+        &supertoml::plugins::TemplatingPlugin as &dyn supertoml::Plugin,
+        &supertoml::plugins::AfterPlugin as &dyn supertoml::Plugin,
+    ]);
     let resolved_values = resolver.resolve_table(&args.file, &args.table)?;
 
     match args.output {
