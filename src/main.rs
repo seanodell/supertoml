@@ -11,6 +11,7 @@ enum OutputFormat {
 #[derive(Parser)]
 #[command(name = "supertoml")]
 #[command(about = "A super TOML tool")]
+#[command(version = env!("CARGO_PKG_VERSION"))]
 struct Args {
     file: String,
     table: String,
