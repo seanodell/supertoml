@@ -1,52 +1,41 @@
 # SuperTOML
 
-A powerful TOML processing tool and library written in Rust that extracts, resolves, and formats TOML table data with support for multiple output formats and extensible plugin architecture.
+A powerful command-line tool for extracting and processing TOML configuration data with support for multiple output formats.
 
-## Overview
+## What is SuperTOML?
 
-SuperTOML is both a command-line tool and a Rust library designed to work with TOML configuration files. It can extract specific tables from TOML files, process them through configurable plugins, and output the results in various formats including TOML, JSON, dotenv, and shell exports.
+SuperTOML extracts specific tables from TOML files and outputs them in various formats (TOML, JSON, dotenv, shell exports). It's perfect for:
 
-## Features
-
-- **Table Extraction**: Extract specific tables from TOML files
-- **Multiple Output Formats**: Support for TOML, JSON, dotenv, and shell export formats
-- **Plugin Architecture**: Extensible plugin system for custom data processing
-- **Cycle Detection**: Prevents infinite loops when processing table dependencies
-- **Type-Safe Parsing**: Leverages Rust's type system for safe TOML parsing
-- **Comprehensive Error Handling**: Detailed error messages for debugging
+- **Configuration management**: Extract specific sections from complex config files
+- **Environment setup**: Convert TOML configs to environment variables
+- **CI/CD pipelines**: Process configuration data in automated workflows
+- **Development tools**: Quick access to specific configuration sections
 
 ## Installation
 
-### Prerequisites
+### From GitHub Releases
 
-- Rust 1.89.0 or later (specified in `mise.toml`)
+Download the latest binary for your platform from [GitHub Releases](https://github.com/seanodell/supertoml/releases).
 
-### Building from Source
+### From Source
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/seanodell/supertoml.git
 cd supertoml
 cargo build --release
 ```
 
 The binary will be available at `target/release/supertoml`.
 
-## Usage
-
-### Command Line Interface
+### Using Cargo
 
 ```bash
-supertoml <file> <table> [--output <format>]
+cargo install supertoml
 ```
 
-**Arguments:**
-- `file`: Path to the TOML file
-- `table`: Name of the table to extract
+## Quick Start
 
-**Options:**
-- `--output`, `-o`: Output format (toml, json, dotenv, exports) [default: toml]
-
-### Examples
+### Basic Usage
 
 ```bash
 # Extract a table and output as TOML (default)
@@ -62,7 +51,9 @@ supertoml config.toml database --output dotenv
 supertoml config.toml database --output exports
 ```
 
-### Sample TOML File
+### Example
+
+Given this TOML file (`config.toml`):
 
 ```toml
 [database]
@@ -78,9 +69,26 @@ port = 8080
 debug = true
 ```
 
-### Output Examples
+Extract the database configuration:
+
+```bash
+supertoml config.toml database
+```
+
+**Output (TOML format):**
+```toml
+host = "localhost"
+name = "myapp"
+password = "secret"
+port = 5432
+user = "admin"
+```
 
 **JSON format:**
+```bash
+supertoml config.toml database --output json
+```
+
 ```json
 {
   "host": "localhost",
@@ -92,6 +100,10 @@ debug = true
 ```
 
 **Dotenv format:**
+```bash
+supertoml config.toml database --output dotenv
+```
+
 ```
 host=localhost
 name=myapp
@@ -102,6 +114,10 @@ user=admin
 
 **Shell exports format:**
 ```bash
+supertoml config.toml database --output exports
+```
+
+```bash
 export "host=localhost"
 export "name=myapp"
 export "password=secret"
@@ -109,440 +125,240 @@ export "port=5432"
 export "user=admin"
 ```
 
-## Library Usage
+## Command Line Reference
 
-SuperTOML can also be used as a Rust library:
-
-```rust
-use supertoml::{Resolver, format_as_json};
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Use standard plugins (before, templating, after)
-    let mut resolver = Resolver::new(vec![
-        &supertoml::plugins::BeforePlugin as &dyn supertoml::Plugin,
-        &supertoml::plugins::TemplatingPlugin as &dyn supertoml::Plugin,
-        &supertoml::plugins::AfterPlugin as &dyn supertoml::Plugin,
-    ]);
-    let values = resolver.resolve_table("config.toml", "database")?;
-    let json_output = format_as_json(&values)?;
-    println!("{}", json_output);
-    Ok(())
-}
-```
-
-## Plugin System
-
-### Creating Plugins
-
-Plugins allow custom processing of table data with type-safe configuration:
-
-```rust
-use supertoml::{Plugin, SuperTomlError, extract_config};
-use std::collections::HashMap;
-use serde::Deserialize;
-
-#[derive(Deserialize)]
-struct MyPluginConfig {
-    option1: String,
-    option2: Option<i32>,
-}
-
-struct MyPlugin;
-
-impl Plugin for MyPlugin {
-    fn name(&self) -> &str {
-        "my_plugin"
-    }
-
-    fn process(
-        &self,
-        resolver: &mut supertoml::Resolver,
-        table_values: &mut HashMap<String, toml::Value>,
-        config: toml::Value,
-    ) -> Result<(), SuperTomlError> {
-        let config: MyPluginConfig = extract_config!(config, MyPluginConfig, self.name())?;
-
-        // Use config.option1, config.option2, etc.
-        // Custom processing logic here
-        // Access resolver.values, resolver.toml_file, etc.
-        // Call resolver.resolve_table_recursive() for recursive processing
-
-        // Important: Plugins can modify table_values, but should not drain them
-        // as they may be passed to other plugins in the processing chain
-
-        // Add values to resolver.values if needed
-        for (key, value) in table_values.iter() {
-            resolver.values.insert(key.clone(), value.clone());
-        }
-
-        Ok(())
-    }
-}
-```
-
-### Plugin Behavior
-
-Plugins receive three parameters:
-- `resolver`: Access to the resolver for recursive table resolution and global values
-- `table_values`: The current table's key-value pairs (can be modified but not drained)
-- `config`: Plugin-specific configuration from the TOML file
-
-**Important**: Plugins should not drain `table_values` because they may be passed to other plugins in the processing chain. Use `.iter()` to copy values to `resolver.values` rather than `.drain()`.
-
-If a plugin modifies `table_values`, it should also update `resolver.values` to match the modified values, so that if later plugins re-add the table values to `resolver.values`, they get the modified values, not the original ones.
-
-### Plugin Configuration
-
-Plugins are configured in TOML files using a special `_` key within the table:
-
-```toml
-[my_table]
-key1 = "value1"
-key2 = "value2"
-_.my_plugin = { option1 = "config_value", option2 = 42 }
-```
-
-### Using Plugins
-
-#### Standard Plugins (Recommended)
-```rust
-use supertoml::{Resolver, format_as_json};
-use supertoml::plugins::{TemplatingPlugin, BeforePlugin, AfterPlugin};
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let plugins: Vec<&'static dyn supertoml::Plugin> = vec![
-        &BeforePlugin,
-        &TemplatingPlugin,
-        &AfterPlugin,
-    ];
-
-    let mut resolver = Resolver::new(plugins);
-    let values = resolver.resolve_table("config.toml", "my_table")?;
-    let json_output = format_as_json(&values)?;
-    println!("{}", json_output);
-    Ok(())
-}
-```
-
-#### Development/Testing Plugins
-```rust
-use supertoml::{Resolver, format_as_json};
-use supertoml::plugins::{NoopPlugin, ReferencePlugin};
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let plugins: Vec<&'static dyn supertoml::Plugin> = vec![
-        &NoopPlugin,
-        &ReferencePlugin,
-    ];
-
-    let mut resolver = Resolver::new(plugins);
-    let values = resolver.resolve_table("config.toml", "my_table")?;
-    let json_output = format_as_json(&values)?;
-    println!("{}", json_output);
-    Ok(())
-}
-```
-
-### Built-in Plugins
-
-SuperTOML comes with several built-in plugins, categorized as follows:
-
-#### Standard Plugins (Included by Default)
-These plugins are automatically included when using SuperTOML and provide core functionality:
-
-**TemplatingPlugin**
-Processes string values through Minijinja templating using `resolver.values` as context. Always runs and requires no configuration.
-
-**BeforePlugin**
-Resolves multiple tables before processing the current table. Configuration:
-```toml
-_.before = ["table1", "table2", "table3"]
-```
-
-**AfterPlugin**
-Resolves multiple tables after processing the current table. Does not add current table values to `resolver.values`. Configuration:
-```toml
-_.after = ["table1", "table2", "table3"]
-```
-
-#### Development/Testing Plugins
-These plugins are primarily used for testing, development, or specific use cases:
-
-**NoopPlugin**
-A simple plugin that adds all table values to `resolver.values`. Always runs and requires no configuration. Useful for testing and development.
-
-**ReferencePlugin**
-Resolves another table before processing the current table. Configuration:
-```toml
-_.reference = { table = "other_table" }
-```
-Useful for testing recursive resolution scenarios.
-
-### Plugin Config Types
-
-Your plugin config can be any valid TOML type:
-
-```toml
-# Simple string
-_.simple = "hello"
-
-# Number
-_.count = 42
-
-# Boolean
-_.enabled = true
-
-# String array
-_.list = ["item1", "item2", "item3"]
-
-# Complex structure
-_.complex = {
-    database = { host = "localhost", port = 5432 },
-    cache = { ttl = 300, size = 1000 }
-}
-```
-
-## Architecture
-
-### Core Components
-
-#### 1. **Resolver** (`src/resolver.rs`)
-The heart of SuperTOML, responsible for:
-- Loading and parsing TOML files
-- Extracting specific tables
-- Processing tables through plugins
-- Detecting and preventing circular dependencies
-- Managing resolved values
-
-#### 2. **Loader** (`src/loader.rs`)
-Handles TOML file operations:
-- File reading and parsing
-- Table extraction utilities
-- Type conversion traits (`FromTomlValue`)
-- Helper extensions for TOML tables
-
-#### 3. **Formatter** (`src/formatter.rs`)
-Converts resolved data to various output formats:
-- **TOML**: Native TOML format
-- **JSON**: Pretty-printed JSON
-- **Dotenv**: Environment variable format (`KEY=value`)
-- **Exports**: Shell export format (`export "KEY=value"`)
-
-#### 4. **Error Handling** (`src/error.rs`)
-Comprehensive error types:
-- File I/O errors
-- TOML parsing errors
-- Table resolution errors
-- Plugin errors
-- Cycle detection errors
-
-#### 5. **Plugin System** (`src/resolver.rs`)
-Extensible architecture for custom processing:
-- Simple `Plugin` trait with type-safe configuration extraction
-- `extract_config!` macro for easy deserialization
-- Support for any TOML data type as configuration
-- Full recursive resolution support - plugins can resolve other tables
-- Ownership transfer design to avoid Rust borrowing conflicts
-
-### Data Flow
-
-```
-TOML File → Loader → Resolver → Plugins → Formatter → Output
-```
-
-1. **Load**: Read and parse TOML file
-2. **Extract**: Extract specified table
-3. **Resolve**: Process through resolver and plugins (with recursive resolution)
-4. **Format**: Convert to requested output format
-5. **Output**: Display or return formatted result
-
-### Recursive Resolution
-
-Plugins can trigger recursive resolution of other tables within the same TOML file:
-
-```rust
-// Inside a plugin's process method
-crate::resolve_table_recursive(resolver, &config.table)?;
-```
-
-This ensures that every table resolution goes through the complete resolver process, including plugin processing, even when referenced by other tables.
-
-## Testing
-
-The project includes comprehensive testing:
-
-### Test Structure
-- **Integration tests**: `tests/integration_tests.rs`
-- **Test cases**: `tests/test_cases/*.toml`
-- **Generated tests**: Build script automatically generates tests from test case files
-- **Plugin tests**: Noop plugin included in all integration tests
-
-### Running Tests
+### Syntax
 
 ```bash
-# Run all tests
-cargo test
-
-# Run specific test
-cargo test test_basic_strings
-
-# Run with output
-cargo test test_noop_plugin -- --nocapture
+supertoml <file> <table> [--output <format>]
 ```
 
-### Test Case Format
+### Arguments
 
-Test cases are defined in TOML files with the following structure:
+- `file`: Path to the TOML file
+- `table`: Name of the table to extract
+
+### Options
+
+- `--output`, `-o`: Output format
+  - `toml` (default): Native TOML format
+  - `json`: Pretty-printed JSON
+  - `dotenv`: Environment variable format (`KEY=value`)
+  - `exports`: Shell export format (`export "KEY=value"`)
+
+### Examples
+
+```bash
+# Extract database config as TOML
+supertoml app.toml database
+
+# Extract server config as JSON
+supertoml app.toml server -o json
+
+# Extract logging config as dotenv
+supertoml app.toml logging --output dotenv
+
+# Extract API config as shell exports
+supertoml app.toml api --output exports
+```
+
+## Use Cases
+
+### Configuration Management
+
+Extract specific sections from complex configuration files:
+
+```bash
+# Extract only the database configuration
+supertoml config.toml database > database.toml
+
+# Extract only the logging configuration
+supertoml config.toml logging > logging.toml
+```
+
+### Environment Variables
+
+Convert TOML configuration to environment variables:
+
+```bash
+# Load database config as environment variables
+eval $(supertoml config.toml database --output exports)
+
+# Or save to a file
+supertoml config.toml database --output dotenv > .env
+```
+
+### CI/CD Pipelines
+
+Use in automated workflows:
+
+```bash
+# Extract version info for deployment
+VERSION=$(supertoml app.toml app --output json | jq -r .version)
+
+# Extract build configuration
+supertoml build.toml production --output json > build-config.json
+```
+
+### Development Tools
+
+Quick access to configuration data:
+
+```bash
+# Check current database settings
+supertoml config.toml database --output json | jq .
+
+# Extract API endpoints
+supertoml api.toml endpoints --output json
+```
+
+## Output Formats
+
+### TOML (Default)
+
+Native TOML format, perfect for configuration files:
 
 ```toml
-[test]
-name = "Test name"
-description = "Test description"
-table = "table_to_extract"
+host = "localhost"
+port = 5432
+name = "myapp"
+```
 
-[table_to_extract]
-# Test data here
+### JSON
 
-[expected.toml]
-content = '''
-# Expected TOML output
-'''
+Pretty-printed JSON, great for APIs and data processing:
 
-[expected.json]
-content = '''
+```json
 {
-  "expected": "json output"
+  "host": "localhost",
+  "port": 5432,
+  "name": "myapp"
 }
-'''
-
-[expected.dotenv]
-content = '''
-key=value
-'''
-
-[expected.exports]
-content = '''
-export "key=value"
-'''
 ```
 
-### Error Testing
+### Dotenv
 
-Test cases can also test for expected errors by adding an `expected_error` field:
+Environment variable format for `.env` files:
 
-```toml
-[test]
-name = "Error test"
-description = "Test that specific errors are raised"
-table = "problematic_table"
-expected_error = "Cycle detected"
-
-[problematic_table]
-# This will cause a cycle detection error
-_.reference = { table = "problematic_table" }
+```
+host=localhost
+port=5432
+name=myapp
 ```
 
-The `expected_error` field accepts a regex pattern for partial matching of error messages.
+### Shell Exports
 
-### Plugin Testing
+Shell export format for sourcing in scripts:
 
-The integration test framework automatically includes all built-in plugins for tests:
-
-```toml
-[test]
-name = "Plugin test"
-description = "Test plugin functionality"
-table = "config"
-
-[config]
-app_name = "test-app"
-_.reference = { table = "other_table" }
-_.before = ["setup", "init"]
-_.after = ["cleanup", "logging"]
+```bash
+export "host=localhost"
+export "port=5432"
+export "name=myapp"
 ```
-
-This allows testing of various plugin combinations and recursive resolution scenarios.
-
-## Dependencies
-
-- **clap**: Command-line argument parsing with derive macros
-- **toml**: TOML parsing and serialization
-- **serde_json**: JSON handling and pretty printing
-- **serde**: Serialization framework
-- **minijinja**: Template engine for string interpolation and templating plugin
-- **glob**: File pattern matching (build-time)
 
 ## Error Handling
 
-SuperTOML provides detailed error messages for common issues:
+SuperTOML provides clear error messages for common issues:
 
 - **File not found**: Clear indication when TOML files can't be read
 - **Parse errors**: Detailed TOML syntax error reporting
 - **Table not found**: Specific table name in error message
 - **Type mismatches**: Clear indication when expected table is different type
-- **Cycle detection**: Prevents infinite loops with descriptive error
-- **Plugin errors**: Plugin-specific error reporting with context
 
-## Development
+## Examples
 
-### Project Structure
+### Web Application Configuration
 
+```toml
+# config.toml
+[app]
+name = "my-web-app"
+version = "1.0.0"
+debug = false
+
+[database]
+host = "localhost"
+port = 5432
+name = "myapp"
+user = "admin"
+password = "secret"
+
+[redis]
+host = "localhost"
+port = 6379
+db = 0
+
+[email]
+smtp_host = "smtp.gmail.com"
+smtp_port = 587
+username = "user@gmail.com"
+password = "app-password"
 ```
-supertoml/
-├── src/
-│   ├── main.rs          # CLI entry point
-│   ├── lib.rs           # Library exports
-│   ├── error.rs         # Error types
-│   ├── loader.rs        # TOML loading utilities
-│   ├── formatter.rs     # Output formatting
-│   ├── resolver.rs      # Core resolution logic
-│   └── plugins/         # Plugin implementations
-│       ├── mod.rs       # Plugin module exports
-│       ├── noop.rs      # Example noop plugin
-│       └── reference.rs # Example reference plugin with recursive resolution
-├── tests/
-│   ├── integration_tests.rs    # Test framework
-│   └── test_cases/            # Test case definitions
-├── build.rs            # Build script for test generation
-├── Cargo.toml          # Project configuration
-└── mise.toml          # Tool version specification
+
+Extract specific configurations:
+
+```bash
+# Get app info
+supertoml config.toml app --output json
+
+# Get database config
+supertoml config.toml database --output dotenv
+
+# Get email config
+supertoml config.toml email --output exports
 ```
 
-### Build Script
+### Docker Compose Environment
 
-The `build.rs` script automatically generates integration tests from TOML files in `tests/test_cases/`. This ensures all test cases are automatically included when new test files are added.
+```toml
+# docker.toml
+[postgres]
+image = "postgres:15"
+port = 5432
+environment = { POSTGRES_DB = "myapp", POSTGRES_USER = "admin" }
 
-### Adding New Features
+[redis]
+image = "redis:7"
+port = 6379
 
-1. **New Output Format**: Add to `OutputFormat` enum and implement in `formatter.rs`
-2. **New Plugin**: Implement `Plugin` trait and add to plugins directory
-3. **New Error Type**: Add to `SuperTomlError` enum with appropriate display message
-4. **New Test Case**: Add TOML file to `tests/test_cases/` directory
+[app]
+image = "myapp:latest"
+port = 8080
+depends_on = ["postgres", "redis"]
+```
 
-### Architecture Notes
+Extract service configurations:
 
-The resolver uses free functions instead of methods to avoid Rust borrowing conflicts:
-- `resolve_table_recursive()` - Main resolution logic
-- `process_plugins()` - Plugin processing
-- `extract_table_from_file()` - Table extraction
+```bash
+# Get postgres config
+supertoml docker.toml postgres --output json
 
-This design allows plugins to access the resolver for recursive resolution while maintaining clean ownership semantics.
+# Get app config
+supertoml docker.toml app --output json
+```
 
-## Performance Notes
+## Troubleshooting
 
-- All output formats sort keys alphabetically for consistent output
-- Table processing includes cycle detection to prevent infinite loops
-- Memory efficient: processes one table at a time
-- Build-time test generation for fast test execution
+### Common Issues
 
-## Future Enhancements
+**"Table not found" error**
+- Check that the table name exists in your TOML file
+- Table names are case-sensitive
+- Use `supertoml config.toml` to see available tables
 
-Potential areas for expansion:
-- Configuration file support for default plugins
-- Streaming support for large TOML files
-- Environment variable substitution
-- Additional output formats (YAML, XML, etc.)
-- Plugin configuration validation
+**"File not found" error**
+- Verify the file path is correct
+- Use absolute paths if needed: `supertoml /path/to/config.toml table`
+
+**"Invalid TOML" error**
+- Check your TOML syntax
+- Use a TOML validator to verify the file
+
+### Getting Help
+
+- Check the [GitHub repository](https://github.com/seanodell/supertoml) for issues and discussions
+- Review the [development documentation](DEVELOPMENT.md) for advanced usage
+- Open an issue for bugs or feature requests
 
 ## License
 
