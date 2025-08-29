@@ -462,6 +462,12 @@ Potential areas for expansion:
 - Additional output formats (YAML, XML, etc.)
 - Plugin configuration validation
 
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
+
+Copyright (c) 2025 Sean O'Dell
+
 ## Contributing
 
 We welcome contributions from the community! Whether you're reporting bugs, requesting features, or submitting code, your help is appreciated.

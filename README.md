@@ -362,7 +362,9 @@ supertoml docker.toml app --output json
 
 ## License
 
-[License information would go here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2025 Sean O'Dell
 
 ## Contributing
 

@@ -2,6 +2,8 @@
 name = "supertoml"
 version = "0.1.0"
 edition = "2021"
+authors = ["Sean O'Dell <sean@celsoft.com>"]
+license = "MIT"
 
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
