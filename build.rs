@@ -1,6 +1,6 @@
 use std::env;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, MAIN_SEPARATOR};
 
 fn main() {
     let out_dir = env::var_os("OUT_DIR").expect("OUT_DIR environment variable not set");
@@ -20,7 +20,11 @@ fn main() {
             .unwrap_or("unknown");
 
         let test_name = format!("test_{}", file_stem.replace("-", "_"));
-        let test_path = test_file.to_string_lossy();
+        let test_path = if MAIN_SEPARATOR != '/' {
+            test_file.to_string_lossy().replace(MAIN_SEPARATOR, "/")
+        } else {
+            test_file.to_string_lossy().to_string()
+        };
 
         generated_tests.push_str(&format!(
             r#"

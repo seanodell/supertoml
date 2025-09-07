@@ -1,6 +1,7 @@
 [tools]
 rust = "1.89.0"
 pre-commit = "3.7.0"
+act = "latest"
 
 [tasks]
 build = "cargo build --release"
@@ -10,3 +11,60 @@ fmt = "cargo fmt"
 fmt-check = "cargo fmt -- --check"
 clean = "cargo clean"
 docker-test = "docker run --rm -v $(pwd):/app -w /app rust:latest sh -c 'cargo test && cargo build --release && ./target/release/supertoml --help'"
+
+[tasks.release]
+description = "Create a release tag from the current version in Cargo.toml"
+run = '''
+#!/bin/bash
+set -e
+
+# Get version from Cargo.toml
+VERSION=$(cargo metadata --format-version 1 --no-deps | jq -r '.packages[0].version')
+TAG_NAME="v$VERSION"
+
+echo "Creating release tag: $TAG_NAME"
+
+# Check if tag already exists locally
+if git tag -l | grep -q "^$TAG_NAME$"; then
+    echo "Tag $TAG_NAME already exists locally"
+    read -p "Do you want to overwrite the local tag? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "Deleting local tag $TAG_NAME"
+        git tag -d "$TAG_NAME"
+    else
+        echo "Aborting release"
+        exit 1
+    fi
+fi
+
+# Create the tag
+echo "Creating tag $TAG_NAME"
+git tag "$TAG_NAME"
+
+# Try to push the tag
+echo "Pushing tag $TAG_NAME to origin"
+if git push origin "$TAG_NAME"; then
+    echo "✅ Successfully pushed tag $TAG_NAME"
+    echo "🚀 Release workflow should now be triggered"
+else
+    echo "❌ Failed to push tag $TAG_NAME"
+    echo "This usually means the tag already exists on the remote"
+
+    read -p "Do you want to force push (overwrite the remote tag)? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "Force pushing tag $TAG_NAME"
+        if git push origin "$TAG_NAME" --force; then
+            echo "✅ Successfully force pushed tag $TAG_NAME"
+            echo "🚀 Release workflow should now be triggered"
+        else
+            echo "❌ Failed to force push tag $TAG_NAME"
+            exit 1
+        fi
+    else
+        echo "Aborting release"
+        exit 1
+    fi
+fi
+'''

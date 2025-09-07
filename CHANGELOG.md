@@ -1,0 +1,21 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.1.0] - 2024-09-07
+
+### Added
+- Initial release of supertoml TOML processing tool
+- Command-line interface with Clap argument parsing
+- Plugin-based architecture for extensible TOML processing
+- Core plugins: noop, templating, before, after, and reference
+- Recursive table resolving with circular reference detection
+- Comprehensive error handling and validation
+- TOML-based unit test system
+- Cross-platform binary builds for Windows, macOS, and Linux
+- Automated release workflow with GitHub Actions
+- Pre-commit hooks for code quality
+- MIT license and development documentation
