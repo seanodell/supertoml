@@ -20,17 +20,15 @@ jobs:
         include:
           # macOS
           - os: macos-latest
-            arch: x86_64
+            arch: darwin-amd64
             target: x86_64-apple-darwin
-            artifact_name: supertoml-darwin-amd64
             packaging:
               - homebrew
               - mise
               - asdf
           - os: macos-latest
-            arch: aarch64
+            arch: darwin-arm64
             target: aarch64-apple-darwin
-            artifact_name: supertoml-darwin-arm64
             packaging:
               - homebrew
               - mise
@@ -38,9 +36,8 @@ jobs:
 
           # Windows
           - os: windows-latest
-            arch: x86_64
+            arch: windows-amd64
             target: x86_64-pc-windows-msvc
-            artifact_name: supertoml-windows-amd64
             packaging:
               - chocolatey
               - winget
@@ -48,9 +45,8 @@ jobs:
 
           # Linux
           - os: ubuntu-latest
-            arch: x86_64
+            arch: linux-amd64
             target: x86_64-unknown-linux-gnu
-            artifact_name: supertoml-linux-amd64
             packaging:
               - apt
               - yum
@@ -58,9 +54,8 @@ jobs:
               - mise
               - asdf
           - os: ubuntu-24.04-arm
-            arch: aarch64
+            arch: linux-arm64
             target: aarch64-unknown-linux-gnu
-            artifact_name: supertoml-linux-arm64
             packaging:
               - apt
               - yum
@@ -68,9 +63,8 @@ jobs:
               - mise
               - asdf
           - os: ubuntu-latest
-            arch: x86
+            arch: linux-386
             target: i686-unknown-linux-gnu
-            artifact_name: supertoml-linux-386
             packaging:
               - apt
               - yum
@@ -148,23 +142,23 @@ jobs:
           mkdir -p packages
 
           # Create both zip and tar.gz packages for all platforms
-          echo "Creating packages for: ${{ matrix.artifact_name }} v${{ steps.cargo_version.outputs.version }}"
+          echo "Creating packages for: ${{ matrix.arch }} v${{ steps.cargo_version.outputs.version }}"
 
           # Create zip package
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             # Use PowerShell for Windows
-            powershell -Command "Compress-Archive -Path 'target/${{ matrix.target }}/release/supertoml.exe' -DestinationPath 'packages/supertoml-${{ steps.cargo_version.outputs.version }}-${{ matrix.artifact_name }}.zip' -Force"
+            powershell -Command "Compress-Archive -Path 'target/${{ matrix.target }}/release/supertoml.exe' -DestinationPath 'packages/supertoml-${{ steps.cargo_version.outputs.version }}-${{ matrix.arch }}.zip' -Force"
           else
             # Use zip for Unix systems
-            zip -j "packages/supertoml-${{ steps.cargo_version.outputs.version }}-${{ matrix.artifact_name }}.zip" "target/${{ matrix.target }}/release/supertoml"
+            zip -j "packages/supertoml-${{ steps.cargo_version.outputs.version }}-${{ matrix.arch }}.zip" "target/${{ matrix.target }}/release/supertoml"
           fi
 
           # Create tar.gz package
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             # Use tar (available on Windows 10+ and GitHub runners)
-            tar -czf "packages/supertoml-${{ steps.cargo_version.outputs.version }}-${{ matrix.artifact_name }}.tar.gz" -C "target/${{ matrix.target }}/release" supertoml.exe
+            tar -czf "packages/supertoml-${{ steps.cargo_version.outputs.version }}-${{ matrix.arch }}.tar.gz" -C "target/${{ matrix.target }}/release" supertoml.exe
           else
-            tar -czf "packages/supertoml-${{ steps.cargo_version.outputs.version }}-${{ matrix.artifact_name }}.tar.gz" -C "target/${{ matrix.target }}/release" supertoml
+            tar -czf "packages/supertoml-${{ steps.cargo_version.outputs.version }}-${{ matrix.arch }}.tar.gz" -C "target/${{ matrix.target }}/release" supertoml
           fi
 
           echo "Created packages:"
@@ -211,7 +205,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
+          name: ${{ matrix.arch }}
           path: packages/
           exclude: "*.d *.pdb"
 
