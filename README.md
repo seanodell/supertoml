@@ -13,6 +13,25 @@ SuperTOML extracts specific tables from TOML files and outputs them in various f
 
 ## Installation
 
+### Using mise (Recommended)
+
+If you use [mise](https://mise.jdx.dev/) for version management:
+
+```bash
+# Install directly using ubi backend
+mise install ubi:seanodell/supertoml@latest
+```
+
+Or add to your `mise.toml`:
+```toml
+[tools]
+"ubi:seanodell/supertoml" = "latest"
+```
+
+mise will automatically download the appropriate binary for your platform from GitHub releases.
+
+> **Note**: We're working on getting supertoml added to the mise registry, which will enable even simpler installation with just `supertoml = "latest"` in your mise.toml.
+
 ### From GitHub Releases
 
 Download the latest binary for your platform from [GitHub Releases](https://github.com/seanodell/supertoml/releases).
