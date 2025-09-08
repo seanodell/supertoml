@@ -1,4 +1,4 @@
-use crate::{Plugin, SuperTomlError};
+use crate::{utils::add_values_to_resolver, Plugin, SuperTomlError};
 use std::collections::HashMap;
 
 pub struct BeforePlugin;
@@ -22,9 +22,7 @@ impl Plugin for BeforePlugin {
             }
         }
 
-        for (key, value) in table_values.iter() {
-            resolver.values.insert(key.clone(), value.clone());
-        }
+        add_values_to_resolver(resolver, table_values);
 
         Ok(())
     }

@@ -1,5 +1,11 @@
-use crate::{extract_config, utils::toml_value_to_jinja, Plugin, SuperTomlError};
-use minijinja::{Environment, Value as JinjaValue};
+use crate::{
+    extract_config,
+    utils::{
+        add_values_to_resolver, create_template_environment, template_error, toml_value_to_jinja,
+    },
+    Plugin, SuperTomlError,
+};
+use minijinja::Value as JinjaValue;
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -26,7 +32,7 @@ impl Plugin for ImportPlugin {
         // Skip processing if config is not an array (no import configurations)
         if config.as_array().is_none() {
             // No import configuration, add table_values to resolver and return
-            Self::add_values_to_resolver(resolver, table_values);
+            add_values_to_resolver(resolver, table_values);
             return Ok(());
         }
 
@@ -38,7 +44,7 @@ impl Plugin for ImportPlugin {
         }
 
         // Add all table_values to resolver.values (following the pattern from other plugins)
-        Self::add_values_to_resolver(resolver, table_values);
+        add_values_to_resolver(resolver, table_values);
 
         Ok(())
     }
@@ -110,7 +116,7 @@ impl ImportPlugin {
         template: &str,
         context: &HashMap<String, toml::Value>,
     ) -> Result<String, SuperTomlError> {
-        let env = Environment::new();
+        let env = create_template_environment();
 
         // Create template context with the key variable
         let mut template_context = HashMap::new();
@@ -121,32 +127,15 @@ impl ImportPlugin {
             template_context.insert(k.clone(), toml_value_to_jinja(v));
         }
 
-        let template_obj =
-            env.template_from_str(template)
-                .map_err(|e| SuperTomlError::PluginError {
-                    plugin_name: self.name().to_string(),
-                    error: format!("Failed to parse key_format template: {}", e),
-                })?;
+        let template_obj = env
+            .template_from_str(template)
+            .map_err(|e| template_error(self.name(), "Failed to parse key_format template", e))?;
 
-        let result =
-            template_obj
-                .render(&template_context)
-                .map_err(|e| SuperTomlError::PluginError {
-                    plugin_name: self.name().to_string(),
-                    error: format!("Failed to render key_format template: {}", e),
-                })?;
+        let result = template_obj
+            .render(&template_context)
+            .map_err(|e| template_error(self.name(), "Failed to render key_format template", e))?;
 
         Ok(result)
-    }
-
-    /// Add values from table_values to resolver (avoids duplication)
-    fn add_values_to_resolver(
-        resolver: &mut crate::Resolver,
-        table_values: &HashMap<String, toml::Value>,
-    ) {
-        for (key, value) in table_values {
-            resolver.values.insert(key.clone(), value.clone());
-        }
     }
 }
 
