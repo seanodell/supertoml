@@ -59,6 +59,23 @@ fn process_value_with_jinja(
                 Ok(value.clone())
             }
         }
+        toml::Value::Array(arr) => {
+            // Recursively process each element in the array
+            let processed_arr: Result<Vec<toml::Value>, SuperTomlError> = arr
+                .iter()
+                .map(|item| process_value_with_jinja(item, context))
+                .collect();
+            Ok(toml::Value::Array(processed_arr?))
+        }
+        toml::Value::Table(table) => {
+            // Recursively process each value in the table
+            let mut processed_table = toml::Table::new();
+            for (key, val) in table {
+                let processed_val = process_value_with_jinja(val, context)?;
+                processed_table.insert(key.clone(), processed_val);
+            }
+            Ok(toml::Value::Table(processed_table))
+        }
         _ => Ok(value.clone()),
     }
 }
