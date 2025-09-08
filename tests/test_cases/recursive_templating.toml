@@ -1,0 +1,156 @@
+# Test case for recursive templating in arrays and maps
+# This ensures that variables in nested structures (arrays, tables) are properly resolved
+
+[test]
+name = "Recursive templating in arrays and maps"
+description = "Test that variables in nested arrays and objects are properly resolved"
+table = "target"
+
+[target]
+# Base variables for templating
+app_name = "MyApp"
+env = "prod"
+version = "1.0.0"
+port = 8080
+host = "db.example.com"
+database_name = "myapp_db"
+
+# Test array with templated strings
+services = ["{{ app_name }}-web", "{{ app_name }}-worker", "{{ app_name }}-scheduler"]
+
+# Test nested object with templated values
+config = { app_name = "{{ app_name }}", environment = "{{ env }}", version = "{{ version }}", database_url = "postgresql://{{ host }}/{{ database_name }}", server_port = "{{ port }}" }
+
+# Test mixed nested structure
+deployment = { name = "{{ app_name }}-{{ env }}", replicas = 3, services = ["{{ app_name }}-api", "{{ app_name }}-worker"], config = { debug = false, log_level = "info", app = "{{ app_name }}" } }
+
+# Test array of objects
+endpoints = [
+    { name = "{{ app_name }}-api", url = "https://api.{{ env }}.example.com" },
+    { name = "{{ app_name }}-admin", url = "https://admin.{{ env }}.example.com" }
+]
+
+[expected.toml]
+content = '''
+app_name = "MyApp"
+database_name = "myapp_db"
+env = "prod"
+host = "db.example.com"
+port = 8080
+services = ["MyApp-web", "MyApp-worker", "MyApp-scheduler"]
+version = "1.0.0"
+
+[config]
+app_name = "MyApp"
+database_url = "postgresql://db.example.com/myapp_db"
+environment = "prod"
+server_port = "8080"
+version = "1.0.0"
+
+[deployment]
+name = "MyApp-prod"
+replicas = 3
+services = ["MyApp-api", "MyApp-worker"]
+
+[deployment.config]
+app = "MyApp"
+debug = false
+log_level = "info"
+
+[[endpoints]]
+name = "MyApp-api"
+url = "https://api.prod.example.com"
+
+[[endpoints]]
+name = "MyApp-admin"
+url = "https://admin.prod.example.com"
+'''
+
+[expected.json]
+content = '''
+{
+  "app_name": "MyApp",
+  "config": {
+    "app_name": "MyApp",
+    "database_url": "postgresql://db.example.com/myapp_db",
+    "environment": "prod",
+    "server_port": "8080",
+    "version": "1.0.0"
+  },
+  "database_name": "myapp_db",
+  "deployment": {
+    "config": {
+      "app": "MyApp",
+      "debug": false,
+      "log_level": "info"
+    },
+    "name": "MyApp-prod",
+    "replicas": 3,
+    "services": [
+      "MyApp-api",
+      "MyApp-worker"
+    ]
+  },
+  "endpoints": [
+    {
+      "name": "MyApp-api",
+      "url": "https://api.prod.example.com"
+    },
+    {
+      "name": "MyApp-admin",
+      "url": "https://admin.prod.example.com"
+    }
+  ],
+  "env": "prod",
+  "host": "db.example.com",
+  "port": 8080,
+  "services": [
+    "MyApp-web",
+    "MyApp-worker",
+    "MyApp-scheduler"
+  ],
+  "version": "1.0.0"
+}
+'''
+
+[expected.dotenv]
+content = '''
+app_name=MyApp
+config={"app_name":"MyApp","database_url":"postgresql://db.example.com/myapp_db","environment":"prod","server_port":"8080","version":"1.0.0"}
+database_name=myapp_db
+deployment={"config":{"app":"MyApp","debug":false,"log_level":"info"},"name":"MyApp-prod","replicas":3,"services":["MyApp-api","MyApp-worker"]}
+endpoints=[{"name":"MyApp-api","url":"https://api.prod.example.com"},{"name":"MyApp-admin","url":"https://admin.prod.example.com"}]
+env=prod
+host=db.example.com
+port=8080
+services=["MyApp-web","MyApp-worker","MyApp-scheduler"]
+version=1.0.0
+'''
+
+[expected.exports]
+content = '''
+export "app_name=MyApp"
+export "config={"app_name":"MyApp","database_url":"postgresql://db.example.com/myapp_db","environment":"prod","server_port":"8080","version":"1.0.0"}"
+export "database_name=myapp_db"
+export "deployment={"config":{"app":"MyApp","debug":false,"log_level":"info"},"name":"MyApp-prod","replicas":3,"services":["MyApp-api","MyApp-worker"]}"
+export "endpoints=[{"name":"MyApp-api","url":"https://api.prod.example.com"},{"name":"MyApp-admin","url":"https://admin.prod.example.com"}]"
+export "env=prod"
+export "host=db.example.com"
+export "port=8080"
+export "services=["MyApp-web","MyApp-worker","MyApp-scheduler"]"
+export "version=1.0.0"
+'''
+
+[expected.tfvars]
+content = '''
+app_name = "MyApp"
+config = {app_name = "MyApp", database_url = "postgresql://db.example.com/myapp_db", environment = "prod", server_port = "8080", version = "1.0.0"}
+database_name = "myapp_db"
+deployment = {config = {app = "MyApp", debug = false, log_level = "info"}, name = "MyApp-prod", replicas = 3, services = ["MyApp-api", "MyApp-worker"]}
+endpoints = [{name = "MyApp-api", url = "https://api.prod.example.com"}, {name = "MyApp-admin", url = "https://admin.prod.example.com"}]
+env = "prod"
+host = "db.example.com"
+port = 8080
+services = ["MyApp-web", "MyApp-worker", "MyApp-scheduler"]
+version = "1.0.0"
+'''
