@@ -4,8 +4,8 @@ on:
   pull_request:
     branches: [ main, master ]
 
-env:
-  CARGO_TERM_COLOR: always
+permissions:
+  contents: read
 
 jobs:
   pre-commit:
@@ -29,36 +29,10 @@ jobs:
       - name: Run pre-commit
         run: pre-commit run --all-files
 
-  rust-tests:
-    name: Rust Tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
-      - name: Run tests
-        run: cargo test
-
-      - name: Run clippy
-        run: cargo clippy -- -D warnings
-
-      - name: Check formatting
-        run: cargo fmt -- --check
+  build-and-test:
+    name: Build and Test All Platforms
+    uses: ./.github/workflows/build-and-test.yml
+    with:
+      create_release: false
+    permissions:
+      contents: read
