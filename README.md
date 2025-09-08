@@ -305,6 +305,274 @@ port = 5432
 name = "myapp"
 ```
 
+## Advanced Features Example
+
+SuperTOML's power comes from its built-in plugin system that enables template processing and dependency resolution. Here's a comprehensive example:
+
+```toml
+[global]
+debug = false
+log_level = "info"
+db_port = 5432
+api_port = 443
+api_version = "v1"
+db_name = "myapp"
+db_user = "app_user"
+
+
+[dev]
+_.before = ["global"]
+
+env = "dev"
+namespace = "dev"
+
+db_host = "db.dev.example.com"
+db_password = "secret456"
+
+api_host = "api.dev.example.com"
+api_secret_key = "sk-abcdef1234567890"
+
+_.after = ["final"]
+
+
+[prod]
+_.before = ["global"]
+
+env = "prod"
+namespace = "prod"
+
+db_host = "db.prod.example.com"
+db_password = "secret123"
+
+api_host = "api.prod.example.com"
+api_secret_key = "sk-1234567890abcdef"
+
+_.after = ["final"]
+
+
+[final]
+app_name = "{{ env | upper }}-MyApp"
+database_url = "postgresql://{{ db_user }}:{{ db_password }}@{{ db_host }}:{{ db_port }}/{{ db_name }}"
+api_endpoint = "https://{{ api_host }}:{{ api_port }}/{{ api_version }}"
+full_config_path = "/etc/myapp/{{ env }}/{{ namespace }}/config.json"
+
+is_production = "{% if env == 'production' %}true{% else %}false{% endif %}"
+replica_count = "{% if debug %}1{% else %}3{% endif %}"
+
+_.after = ["post-final"]
+
+
+[post-final]
+deployment_name = "{{ app_name | lower | replace('-', '_') }}"
+services = ["PROD-MyApp-web", "PROD-MyApp-worker", "PROD-MyApp-scheduler"]
+config = { database_url = "{{ database_url }}", api_endpoint = "{{ api_endpoint }}", debug = "{{ debug }}", log_level = "{{ log_level }}" }
+```
+
+Extract the fully processed production configuration:
+
+```bash
+supertoml app.toml prod --output toml
+```
+
+**Output:**
+```toml
+api_endpoint = "https://api.prod.example.com:443/v1"
+api_host = "api.prod.example.com"
+api_port = 443
+api_secret_key = "sk-1234567890abcdef"
+api_version = "v1"
+app_name = "PROD-MyApp"
+database_url = "postgresql://app_user:secret123@db.prod.example.com:5432/myapp"
+db_host = "db.prod.example.com"
+db_name = "myapp"
+db_password = "secret123"
+db_port = 5432
+db_user = "app_user"
+debug = false
+deployment_name = "prod_myapp"
+env = "prod"
+full_config_path = "/etc/myapp/prod/prod/config.json"
+is_production = "false"
+log_level = "info"
+namespace = "prod"
+replica_count = "3"
+services = ["PROD-MyApp-web", "PROD-MyApp-worker", "PROD-MyApp-scheduler"]
+
+[config]
+api_endpoint = "https://api.prod.example.com:443/v1"
+database_url = "postgresql://app_user:secret123@db.prod.example.com:5432/myapp"
+debug = "false"
+log_level = "info"
+```
+
+For JSON output:
+
+```bash
+supertoml app.toml prod --output json
+```
+
+**Output:**
+```json
+{
+  "api_endpoint": "https://api.prod.example.com:443/v1",
+  "api_host": "api.prod.example.com",
+  "api_port": 443,
+  "api_secret_key": "sk-1234567890abcdef",
+  "api_version": "v1",
+  "app_name": "PROD-MyApp",
+  "config": {
+    "api_endpoint": "https://api.prod.example.com:443/v1",
+    "database_url": "postgresql://app_user:secret123@db.prod.example.com:5432/myapp",
+    "debug": "false",
+    "log_level": "info"
+  },
+  "database_url": "postgresql://app_user:secret123@db.prod.example.com:5432/myapp",
+  "db_host": "db.prod.example.com",
+  "db_name": "myapp",
+  "db_password": "secret123",
+  "db_port": 5432,
+  "db_user": "app_user",
+  "debug": false,
+  "deployment_name": "prod_myapp",
+  "env": "prod",
+  "full_config_path": "/etc/myapp/prod/prod/config.json",
+  "is_production": "false",
+  "log_level": "info",
+  "namespace": "prod",
+  "replica_count": "3",
+  "services": [
+    "PROD-MyApp-web",
+    "PROD-MyApp-worker",
+    "PROD-MyApp-scheduler"
+  ]
+}
+```
+
+For environment variables (dotenv):
+
+```bash
+supertoml app.toml prod --output dotenv
+```
+
+**Output:**
+```
+api_endpoint=https://api.prod.example.com:443/v1
+api_host=api.prod.example.com
+api_port=443
+api_secret_key=sk-1234567890abcdef
+api_version=v1
+app_name=PROD-MyApp
+config={"api_endpoint":"https://api.prod.example.com:443/v1","database_url":"postgresql://app_user:secret123@db.prod.example.com:5432/myapp","debug":"false","log_level":"info"}
+database_url=postgresql://app_user:secret123@db.prod.example.com:5432/myapp
+db_host=db.prod.example.com
+db_name=myapp
+db_password=secret123
+db_port=5432
+db_user=app_user
+debug=false
+deployment_name=prod_myapp
+env=prod
+full_config_path=/etc/myapp/prod/prod/config.json
+is_production=false
+log_level=info
+namespace=prod
+replica_count=3
+services=["PROD-MyApp-web","PROD-MyApp-worker","PROD-MyApp-scheduler"]
+```
+
+For shell exports:
+
+```bash
+supertoml app.toml prod --output exports
+```
+
+**Output:**
+```bash
+export "api_endpoint=https://api.prod.example.com:443/v1"
+export "api_host=api.prod.example.com"
+export "api_port=443"
+export "api_secret_key=sk-1234567890abcdef"
+export "api_version=v1"
+export "app_name=PROD-MyApp"
+export "config={\"api_endpoint\":\"https://api.prod.example.com:443/v1\",\"database_url\":\"postgresql://app_user:secret123@db.prod.example.com:5432/myapp\",\"debug\":\"false\",\"log_level\":\"info\"}"
+export "database_url=postgresql://app_user:secret123@db.prod.example.com:5432/myapp"
+export "db_host=db.prod.example.com"
+export "db_name=myapp"
+export "db_password=secret123"
+export "db_port=5432"
+export "db_user=app_user"
+export "debug=false"
+export "deployment_name=prod_myapp"
+export "env=prod"
+export "full_config_path=/etc/myapp/prod/prod/config.json"
+export "is_production=false"
+export "log_level=info"
+export "namespace=prod"
+export "replica_count=3"
+export "services=[\"PROD-MyApp-web\",\"PROD-MyApp-worker\",\"PROD-MyApp-scheduler\"]"
+```
+
+For Terraform variables:
+
+```bash
+supertoml app.toml prod --output tfvars
+```
+
+**Output:**
+```hcl
+api_endpoint = "https://api.prod.example.com:443/v1"
+api_host = "api.prod.example.com"
+api_port = 443
+api_secret_key = "sk-1234567890abcdef"
+api_version = "v1"
+app_name = "PROD-MyApp"
+config = {api_endpoint = "https://api.prod.example.com:443/v1", database_url = "postgresql://app_user:secret123@db.prod.example.com:5432/myapp", debug = "false", log_level = "info"}
+database_url = "postgresql://app_user:secret123@db.prod.example.com:5432/myapp"
+db_host = "db.prod.example.com"
+db_name = "myapp"
+db_password = "secret123"
+db_port = 5432
+db_user = "app_user"
+debug = false
+deployment_name = "prod_myapp"
+env = "prod"
+full_config_path = "/etc/myapp/prod/prod/config.json"
+is_production = "false"
+log_level = "info"
+namespace = "prod"
+replica_count = "3"
+services = ["PROD-MyApp-web", "PROD-MyApp-worker", "PROD-MyApp-scheduler"]
+```
+
+### Variable Resolution Order
+
+**Important**: Variables can only reference values that were defined in previously processed tables. The processing order is determined by the dependency chain:
+
+1. **Dependencies first**: Tables listed in `_.before` are processed before the current table
+2. **Current table**: The target table is processed with access to all previously resolved variables
+3. **Post-processing**: Tables listed in `_.after` are processed after the current table
+
+In the example above:
+- `global` table is processed first (via `_.before = ["global"]`)
+- `prod` table can reference variables from `global` (like `{{ db_port }}`, `{{ api_version }}`)
+- `final` table can reference variables from both `global` and `prod` (like `{{ env }}`, `{{ db_user }}`)
+- `post-final` table can reference variables from all previous tables (like `{{ app_name }}`, `{{ database_url }}`)
+
+**This means you cannot reference a variable within the same table where it's defined**, and you cannot reference variables from tables that haven't been processed yet.
+
+### Key Features Demonstrated
+
+- **Multi-stage Plugin Processing**: Uses `before`, `templating`, and `after` plugins in sequence
+- **Dependency Chain**: `_.before = ["global"]` loads base configuration, `_.after = ["final"]` for post-processing
+- **Template Processing**: `{{ variable }}` syntax for dynamic value substitution
+- **Advanced Template Filters**: `| upper`, `| lower`, `| replace()` for string transformations
+- **Conditional Logic**: `{% if env == 'production' %}` statements for environment-specific configuration
+- **Recursive Template Resolution**: Templates in arrays and objects are fully resolved (e.g., `services` array and `config` object)
+- **Cross-table Variable Access**: Variables from `database`, `api`, and other dependency tables
+- **Multiple Output Formats**: TOML, JSON, dotenv, shell exports, and Terraform variables (.tfvars)
+- **Complex Data Structures**: Nested objects and arrays with fully resolved template variables
+- **Environment-specific Configuration**: Dynamic values based on deployment environment
+
 ## Error Handling
 
 SuperTOML provides clear error messages for common issues:

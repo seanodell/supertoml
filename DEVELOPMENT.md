@@ -52,6 +52,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Plugin System
 
+### Variable Resolution Order
+
+**Critical Concept**: Variables can only reference values that were defined in previously processed tables. This affects how plugins access and process data:
+
+1. **Dependencies first**: Tables listed in `_.before` are processed before the current table
+2. **Current table processing**: The target table is processed with access to all previously resolved variables
+3. **Post-processing**: Tables listed in `_.after` are processed after the current table
+
+When a plugin processes a table:
+- Variables in `resolver.values` contain all values from previously processed tables
+- The current table cannot reference variables defined within itself
+- Template resolution uses only the existing context from `resolver.values`
+
+This means plugins should be designed to work with the dependency order and cannot resolve forward references.
+
 ### Creating Plugins
 
 Plugins allow custom processing of table data with type-safe configuration:
@@ -433,10 +448,56 @@ The `build.rs` script automatically generates integration tests from TOML files 
 
 ## Adding New Features
 
-1. **New Output Format**: Add to `OutputFormat` enum and implement in `formatter.rs`
-2. **New Plugin**: Implement `Plugin` trait and add to plugins directory
-3. **New Error Type**: Add to `SuperTomlError` enum with appropriate display message
-4. **New Test Case**: Add TOML file to `tests/test_cases/` directory
+### Adding a New Output Format
+
+To add a new output format (e.g., YAML, XML), follow these steps:
+
+1. **Add to CLI enum**: Add the new format to the `OutputFormat` enum in `src/main.rs`
+2. **Implement formatter**: Add a `format_as_<format>` function in `src/formatter.rs`
+3. **Export from library**: Add the new function to the exports in `src/lib.rs`
+4. **Add CLI integration**: Add a new match arm in the `run` function in `src/main.rs`
+5. **Add README documentation**: Add an example output section in the "Advanced Features Example" in `README.md`
+6. **Add test validation**: Add the new format to the `get_output_formats()` function in `tests/readme_validation.rs` with appropriate start/end markers
+7. **Test the implementation**: Run `cargo test` to ensure all tests pass
+
+**Example for adding YAML format:**
+```rust
+// In src/formatter.rs
+pub fn format_as_yaml(values: &HashMap<String, toml::Value>) -> Result<String, SuperTomlError> {
+    // Implementation here
+}
+
+// In src/lib.rs
+pub use formatter::{
+    format_as_dotenv, format_as_exports, format_as_json, format_as_tfvars, format_as_toml, format_as_yaml,
+};
+
+// In src/main.rs OutputFormat enum
+#[derive(Clone, Debug, ValueEnum)]
+enum OutputFormat {
+    Toml,
+    Json,
+    Dotenv,
+    Exports,
+    Tfvars,
+    Yaml, // Add here
+}
+
+// In tests/readme_validation.rs get_output_formats()
+OutputFormat {
+    name: "yaml",
+    format_fn: format_as_yaml,
+    start_marker: "For YAML output:\n\n```bash\nsupertoml app.toml prod --output yaml\n```\n\n**Output:**\n```yaml\n",
+    end_marker: "\n```\n\nFor [next format]:",
+    assert_fn: assert_string_equivalent, // or custom assertion function
+},
+```
+
+### Other Features
+
+1. **New Plugin**: Implement `Plugin` trait and add to plugins directory
+2. **New Error Type**: Add to `SuperTomlError` enum with appropriate display message
+3. **New Test Case**: Add TOML file to `tests/test_cases/` directory
 
 ## Architecture Notes
 
