@@ -1,4 +1,4 @@
-use crate::{extract_config, Plugin, SuperTomlError};
+use crate::{extract_config, utils::add_values_to_resolver, Plugin, SuperTomlError};
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -28,9 +28,7 @@ impl Plugin for ReferencePlugin {
             }
         }
 
-        for (key, value) in table_values.iter() {
-            resolver.values.insert(key.clone(), value.clone());
-        }
+        add_values_to_resolver(resolver, table_values);
 
         Ok(())
     }

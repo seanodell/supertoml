@@ -107,9 +107,7 @@ impl Plugin for MyPlugin {
         // as they may be passed to other plugins in the processing chain
 
         // Add values to resolver.values if needed
-        for (key, value) in table_values.iter() {
-            resolver.values.insert(key.clone(), value.clone());
-        }
+        crate::utils::add_values_to_resolver(resolver, table_values);
 
         Ok(())
     }
@@ -123,7 +121,7 @@ Plugins receive three parameters:
 - `table_values`: The current table's key-value pairs (can be modified but not drained)
 - `config`: Plugin-specific configuration from the TOML file
 
-**Important**: Plugins should not drain `table_values` because they may be passed to other plugins in the processing chain. Use `.iter()` to copy values to `resolver.values` rather than `.drain()`.
+**Important**: Plugins should not drain `table_values` because they may be passed to other plugins in the processing chain. Most plugins should call `crate::utils::add_values_to_resolver(resolver, table_values)` to copy values to the global resolver context.
 
 If a plugin modifies `table_values`, it should also update `resolver.values` to match the modified values, so that if later plugins re-add the table values to `resolver.values`, they get the modified values, not the original ones.
 
@@ -290,6 +288,15 @@ Extensible architecture for custom processing:
 - Support for any TOML data type as configuration
 - Full recursive resolution support - plugins can resolve other tables
 - Ownership transfer design to avoid Rust borrowing conflicts
+
+#### 6. **Shared Utilities** (`src/utils.rs`)
+Common functions used across multiple plugins:
+- **`toml_value_to_jinja()`**: Converts TOML values to Minijinja template values
+- **`add_values_to_resolver()`**: Standard pattern for adding table values to resolver context
+- **`create_template_environment()`**: Creates consistently configured Minijinja environments
+- **`template_error()`**: Creates standardized template-related error messages
+
+These utilities ensure consistency across plugins and reduce code duplication.
 
 ### Data Flow
 
