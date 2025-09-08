@@ -337,6 +337,9 @@ _.after = ["final"]
 
 [prod]
 _.before = ["global"]
+_.import = [
+    { file = "mise.toml", table = "tools", key_format = "tool_{{key}}" }
+]
 
 env = "prod"
 namespace = "prod"
@@ -346,6 +349,10 @@ db_password = "secret123"
 
 api_host = "api.prod.example.com"
 api_secret_key = "sk-1234567890abcdef"
+
+# These values come from the imported mise.toml file
+rust_version = "{{ tool_rust }}"
+act_version = "{{ tool_act }}"
 
 _.after = ["final"]
 
@@ -376,6 +383,7 @@ supertoml app.toml prod --output toml
 
 **Output:**
 ```toml
+act_version = "latest"
 api_endpoint = "https://api.prod.example.com:443/v1"
 api_host = "api.prod.example.com"
 api_port = 443
@@ -396,7 +404,11 @@ is_production = "false"
 log_level = "info"
 namespace = "prod"
 replica_count = "3"
+rust_version = "1.89.0"
 services = ["PROD-MyApp-web", "PROD-MyApp-worker", "PROD-MyApp-scheduler"]
+tool_act = "latest"
+tool_pre-commit = "3.7.0"
+tool_rust = "1.89.0"
 
 [config]
 api_endpoint = "https://api.prod.example.com:443/v1"
@@ -439,12 +451,17 @@ supertoml app.toml prod --output json
   "is_production": "false",
   "log_level": "info",
   "namespace": "prod",
+  "act_version": "latest",
   "replica_count": "3",
+  "rust_version": "1.89.0",
   "services": [
     "PROD-MyApp-web",
     "PROD-MyApp-worker",
     "PROD-MyApp-scheduler"
-  ]
+  ],
+  "tool_act": "latest",
+  "tool_pre-commit": "3.7.0",
+  "tool_rust": "1.89.0"
 }
 ```
 
@@ -456,6 +473,7 @@ supertoml app.toml prod --output dotenv
 
 **Output:**
 ```
+act_version=latest
 api_endpoint=https://api.prod.example.com:443/v1
 api_host=api.prod.example.com
 api_port=443
@@ -477,7 +495,11 @@ is_production=false
 log_level=info
 namespace=prod
 replica_count=3
+rust_version=1.89.0
 services=["PROD-MyApp-web","PROD-MyApp-worker","PROD-MyApp-scheduler"]
+tool_act=latest
+tool_pre-commit=3.7.0
+tool_rust=1.89.0
 ```
 
 For shell exports:
@@ -488,6 +510,7 @@ supertoml app.toml prod --output exports
 
 **Output:**
 ```bash
+export "act_version=latest"
 export "api_endpoint=https://api.prod.example.com:443/v1"
 export "api_host=api.prod.example.com"
 export "api_port=443"
@@ -509,7 +532,11 @@ export "is_production=false"
 export "log_level=info"
 export "namespace=prod"
 export "replica_count=3"
+export "rust_version=1.89.0"
 export "services=[\"PROD-MyApp-web\",\"PROD-MyApp-worker\",\"PROD-MyApp-scheduler\"]"
+export "tool_act=latest"
+export "tool_pre-commit=3.7.0"
+export "tool_rust=1.89.0"
 ```
 
 For Terraform variables:
@@ -540,8 +567,13 @@ full_config_path = "/etc/myapp/prod/prod/config.json"
 is_production = "false"
 log_level = "info"
 namespace = "prod"
+act_version = "latest"
 replica_count = "3"
+rust_version = "1.89.0"
 services = ["PROD-MyApp-web", "PROD-MyApp-worker", "PROD-MyApp-scheduler"]
+tool_act = "latest"
+tool_pre-commit = "3.7.0"
+tool_rust = "1.89.0"
 ```
 
 ### Variable Resolution Order
@@ -562,8 +594,9 @@ In the example above:
 
 ### Key Features Demonstrated
 
-- **Multi-stage Plugin Processing**: Uses `before`, `templating`, and `after` plugins in sequence
+- **Multi-stage Plugin Processing**: Uses `before`, `import`, `templating`, and `after` plugins in sequence
 - **Dependency Chain**: `_.before = ["global"]` loads base configuration, `_.after = ["final"]` for post-processing
+- **External Configuration Import**: `_.import` for loading key/value pairs from external TOML files with optional key transformation
 - **Template Processing**: `{{ variable }}` syntax for dynamic value substitution
 - **Advanced Template Filters**: `| upper`, `| lower`, `| replace()` for string transformations
 - **Conditional Logic**: `{% if env == 'production' %}` statements for environment-specific configuration

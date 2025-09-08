@@ -73,6 +73,7 @@ fn get_resolved_values_for_testing() -> std::collections::HashMap<String, toml::
     // Test the example using the standard plugins (same as CLI)
     let mut resolver = Resolver::new(vec![
         &supertoml::plugins::BeforePlugin as &dyn Plugin,
+        &supertoml::plugins::ImportPlugin as &dyn Plugin,
         &supertoml::plugins::TemplatingPlugin as &dyn Plugin,
         &supertoml::plugins::AfterPlugin as &dyn Plugin,
     ]);
