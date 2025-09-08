@@ -33,3 +33,12 @@ pi=3.14159
 tags=["rust","toml","parser"]
 version=2
 '''
+
+[expected.tfvars]
+content = '''
+enabled = true
+name = "test-app"
+pi = 3.14159
+tags = ["rust", "toml", "parser"]
+version = 2
+'''
