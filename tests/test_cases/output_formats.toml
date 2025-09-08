@@ -1,0 +1,231 @@
+# Test case for validating all output formats
+# This test ensures that all supported output formats work correctly with various data types
+
+[test]
+name = "Output formats validation"
+description = "Test all output formats (toml, json, dotenv, exports, tfvars) with comprehensive data types"
+table = "target"
+
+[target]
+# Basic string values
+app_name = "TestApp"
+environment = "production"
+version = "2.1.0"
+
+# Numeric values
+port = 8080
+timeout = 30.5
+replica_count = 3
+enabled = true
+disabled = false
+
+# Complex string with special characters
+description = "A test app with \"quotes\", 'apostrophes', and $pecial ch@rs!"
+file_path = "/var/log/app.log"
+
+# Arrays of different types
+string_array = ["web", "api", "worker"]
+number_array = [8080, 8081, 8082]
+mixed_array = ["prod", 443, true]
+
+# Simple object/table
+database = { host = "db.example.com", port = 5432, name = "testapp", ssl = true }
+
+# Nested object with various types
+config = { app = { name = "TestApp", debug = false, workers = 4 }, database = { url = "postgresql://user:pass@localhost/db", pool_size = 10 }, features = ["auth", "logging", "metrics"] }
+
+# Array of objects
+endpoints = [
+    { name = "api", url = "https://api.example.com", timeout = 30 },
+    { name = "webhook", url = "https://webhook.example.com", timeout = 60 }
+]
+
+# Edge cases
+empty_string = ""
+null_value = ""
+unicode_text = "Hello 世界! 🚀"
+
+[expected.toml]
+content = '''
+app_name = "TestApp"
+description = """A test app with "quotes", 'apostrophes', and $pecial ch@rs!"""
+disabled = false
+empty_string = ""
+enabled = true
+environment = "production"
+file_path = "/var/log/app.log"
+mixed_array = ["prod", 443, true]
+null_value = ""
+number_array = [8080, 8081, 8082]
+port = 8080
+replica_count = 3
+string_array = ["web", "api", "worker"]
+timeout = 30.5
+unicode_text = "Hello 世界! 🚀"
+version = "2.1.0"
+
+[config]
+features = ["auth", "logging", "metrics"]
+
+[config.app]
+debug = false
+name = "TestApp"
+workers = 4
+
+[config.database]
+pool_size = 10
+url = "postgresql://user:pass@localhost/db"
+
+[database]
+host = "db.example.com"
+name = "testapp"
+port = 5432
+ssl = true
+
+[[endpoints]]
+name = "api"
+timeout = 30
+url = "https://api.example.com"
+
+[[endpoints]]
+name = "webhook"
+timeout = 60
+url = "https://webhook.example.com"
+'''
+
+[expected.json]
+content = '''
+{
+  "app_name": "TestApp",
+  "config": {
+    "app": {
+      "debug": false,
+      "name": "TestApp",
+      "workers": 4
+    },
+    "database": {
+      "pool_size": 10,
+      "url": "postgresql://user:pass@localhost/db"
+    },
+    "features": [
+      "auth",
+      "logging",
+      "metrics"
+    ]
+  },
+  "database": {
+    "host": "db.example.com",
+    "name": "testapp",
+    "port": 5432,
+    "ssl": true
+  },
+  "description": "A test app with \"quotes\", 'apostrophes', and $pecial ch@rs!",
+  "disabled": false,
+  "empty_string": "",
+  "enabled": true,
+  "endpoints": [
+    {
+      "name": "api",
+      "timeout": 30,
+      "url": "https://api.example.com"
+    },
+    {
+      "name": "webhook",
+      "timeout": 60,
+      "url": "https://webhook.example.com"
+    }
+  ],
+  "environment": "production",
+  "file_path": "/var/log/app.log",
+  "mixed_array": [
+    "prod",
+    443,
+    true
+  ],
+  "null_value": "",
+  "number_array": [
+    8080,
+    8081,
+    8082
+  ],
+  "port": 8080,
+  "replica_count": 3,
+  "string_array": [
+    "web",
+    "api",
+    "worker"
+  ],
+  "timeout": 30.5,
+  "unicode_text": "Hello 世界! 🚀",
+  "version": "2.1.0"
+}
+'''
+
+[expected.dotenv]
+content = '''
+app_name=TestApp
+config={"app":{"debug":false,"name":"TestApp","workers":4},"database":{"pool_size":10,"url":"postgresql://user:pass@localhost/db"},"features":["auth","logging","metrics"]}
+database={"host":"db.example.com","name":"testapp","port":5432,"ssl":true}
+description=A test app with "quotes", 'apostrophes', and $pecial ch@rs!
+disabled=false
+empty_string=
+enabled=true
+endpoints=[{"name":"api","timeout":30,"url":"https://api.example.com"},{"name":"webhook","timeout":60,"url":"https://webhook.example.com"}]
+environment=production
+file_path=/var/log/app.log
+mixed_array=["prod",443,true]
+null_value=
+number_array=[8080,8081,8082]
+port=8080
+replica_count=3
+string_array=["web","api","worker"]
+timeout=30.5
+unicode_text=Hello 世界! 🚀
+version=2.1.0
+'''
+
+[expected.exports]
+content = '''
+export "app_name=TestApp"
+export "config={\"app\":{\"debug\":false,\"name\":\"TestApp\",\"workers\":4},\"database\":{\"pool_size\":10,\"url\":\"postgresql://user:pass@localhost/db\"},\"features\":[\"auth\",\"logging\",\"metrics\"]}"
+export "database={\"host\":\"db.example.com\",\"name\":\"testapp\",\"port\":5432,\"ssl\":true}"
+export "description=A test app with "quotes", 'apostrophes', and $pecial ch@rs!"
+export "disabled=false"
+export "empty_string="
+export "enabled=true"
+export "endpoints=[{\"name\":\"api\",\"timeout\":30,\"url\":\"https://api.example.com\"},{\"name\":\"webhook\",\"timeout\":60,\"url\":\"https://webhook.example.com\"}]"
+export "environment=production"
+export "file_path=/var/log/app.log"
+export "mixed_array=[\"prod\",443,true]"
+export "null_value="
+export "number_array=[8080,8081,8082]"
+export "port=8080"
+export "replica_count=3"
+export "string_array=[\"web\",\"api\",\"worker\"]"
+export "timeout=30.5"
+export "unicode_text=Hello 世界! 🚀"
+export "version=2.1.0"
+'''
+
+[expected.tfvars]
+content = '''
+app_name = "TestApp"
+config = {app = {debug = false, name = "TestApp", workers = 4}, database = {pool_size = 10, url = "postgresql://user:pass@localhost/db"}, features = ["auth", "logging", "metrics"]}
+database = {host = "db.example.com", name = "testapp", port = 5432, ssl = true}
+description = "A test app with "quotes", 'apostrophes', and $pecial ch@rs!"
+disabled = false
+empty_string = ""
+enabled = true
+endpoints = [{name = "api", timeout = 30, url = "https://api.example.com"}, {name = "webhook", timeout = 60, url = "https://webhook.example.com"}]
+environment = "production"
+file_path = "/var/log/app.log"
+mixed_array = ["prod", 443, true]
+null_value = ""
+number_array = [8080, 8081, 8082]
+port = 8080
+replica_count = 3
+string_array = ["web", "api", "worker"]
+timeout = 30.5
+unicode_text = "Hello 世界! 🚀"
+version = "2.1.0"
+'''
