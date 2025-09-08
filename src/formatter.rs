@@ -35,7 +35,13 @@ pub fn format_as_dotenv(values: &HashMap<String, toml::Value>) -> Result<String,
 pub fn format_as_exports(values: &HashMap<String, toml::Value>) -> Result<String, SuperTomlError> {
     let lines: Vec<String> = sorted_keys(values)
         .into_iter()
-        .map(|key| format!("export \"{}={}\"", key, value_to_string(&values[key])))
+        .map(|key| {
+            format!(
+                "export \"{}={}\"",
+                key,
+                value_to_exports_string(&values[key])
+            )
+        })
         .collect();
     Ok(lines.join("\n"))
 }
@@ -88,6 +94,22 @@ fn value_to_string(value: &toml::Value) -> String {
         toml::Value::Datetime(dt) => dt.to_string(),
         toml::Value::Array(_) | toml::Value::Table(_) => {
             serde_json::to_string(&toml_value_to_json(value)).unwrap_or_else(|_| "null".to_string())
+        }
+    }
+}
+
+fn value_to_exports_string(value: &toml::Value) -> String {
+    match value {
+        toml::Value::String(s) => s.clone(),
+        toml::Value::Integer(i) => i.to_string(),
+        toml::Value::Float(f) => f.to_string(),
+        toml::Value::Boolean(b) => b.to_string(),
+        toml::Value::Datetime(dt) => dt.to_string(),
+        toml::Value::Array(_) | toml::Value::Table(_) => {
+            // For exports, we need to escape double quotes in JSON for shell safety
+            let json_str = serde_json::to_string(&toml_value_to_json(value))
+                .unwrap_or_else(|_| "null".to_string());
+            json_str.replace('"', "\\\"")
         }
     }
 }

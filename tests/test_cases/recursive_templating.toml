@@ -130,14 +130,14 @@ version=1.0.0
 [expected.exports]
 content = '''
 export "app_name=MyApp"
-export "config={"app_name":"MyApp","database_url":"postgresql://db.example.com/myapp_db","environment":"prod","server_port":"8080","version":"1.0.0"}"
+export "config={\"app_name\":\"MyApp\",\"database_url\":\"postgresql://db.example.com/myapp_db\",\"environment\":\"prod\",\"server_port\":\"8080\",\"version\":\"1.0.0\"}"
 export "database_name=myapp_db"
-export "deployment={"config":{"app":"MyApp","debug":false,"log_level":"info"},"name":"MyApp-prod","replicas":3,"services":["MyApp-api","MyApp-worker"]}"
-export "endpoints=[{"name":"MyApp-api","url":"https://api.prod.example.com"},{"name":"MyApp-admin","url":"https://admin.prod.example.com"}]"
+export "deployment={\"config\":{\"app\":\"MyApp\",\"debug\":false,\"log_level\":\"info\"},\"name\":\"MyApp-prod\",\"replicas\":3,\"services\":[\"MyApp-api\",\"MyApp-worker\"]}"
+export "endpoints=[{\"name\":\"MyApp-api\",\"url\":\"https://api.prod.example.com\"},{\"name\":\"MyApp-admin\",\"url\":\"https://admin.prod.example.com\"}]"
 export "env=prod"
 export "host=db.example.com"
 export "port=8080"
-export "services=["MyApp-web","MyApp-worker","MyApp-scheduler"]"
+export "services=[\"MyApp-web\",\"MyApp-worker\",\"MyApp-scheduler\"]"
 export "version=1.0.0"
 '''
 
