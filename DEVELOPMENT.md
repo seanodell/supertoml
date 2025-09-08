@@ -4,12 +4,12 @@ This document is for developers who want to contribute to SuperTOML, understand 
 
 ## Overview
 
-SuperTOML is both a command-line tool and a Rust library designed to work with TOML configuration files. It can extract specific tables from TOML files, process them through configurable plugins, and output the results in various formats including TOML, JSON, dotenv, and shell exports.
+SuperTOML is both a command-line tool and a Rust library designed to work with TOML configuration files. It can extract specific tables from TOML files, process them through configurable plugins, and output the results in various formats including TOML, JSON, dotenv, shell exports, and Terraform variables.
 
 ## Features
 
 - **Table Extraction**: Extract specific tables from TOML files
-- **Multiple Output Formats**: Support for TOML, JSON, dotenv, and shell export formats
+- **Multiple Output Formats**: Support for TOML, JSON, dotenv, shell export, and Terraform variables formats
 - **Plugin Architecture**: Extensible plugin system for custom data processing
 - **Cycle Detection**: Prevents infinite loops when processing table dependencies
 - **Type-Safe Parsing**: Leverages Rust's type system for safe TOML parsing
@@ -247,6 +247,7 @@ Converts resolved data to various output formats:
 - **JSON**: Pretty-printed JSON
 - **Dotenv**: Environment variable format (`KEY=value`)
 - **Exports**: Shell export format (`export "KEY=value"`)
+- **Tfvars**: Terraform variables format (`key = "value"`)
 
 #### 4. **Error Handling** (`src/error.rs`)
 Comprehensive error types:

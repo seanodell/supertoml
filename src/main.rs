@@ -6,6 +6,7 @@ enum OutputFormat {
     Json,
     Dotenv,
     Exports,
+    Tfvars,
 }
 
 #[derive(Parser)]
@@ -44,5 +45,6 @@ fn run(args: &Args) -> Result<String, supertoml::SuperTomlError> {
         OutputFormat::Json => supertoml::format_as_json(&resolved_values),
         OutputFormat::Dotenv => supertoml::format_as_dotenv(&resolved_values),
         OutputFormat::Exports => supertoml::format_as_exports(&resolved_values),
+        OutputFormat::Tfvars => supertoml::format_as_tfvars(&resolved_values),
     }
 }

@@ -4,7 +4,7 @@ A powerful command-line tool for extracting and processing TOML configuration da
 
 ## What is SuperTOML?
 
-SuperTOML extracts specific tables from TOML files and outputs them in various formats (TOML, JSON, dotenv, shell exports). It's perfect for:
+SuperTOML extracts specific tables from TOML files and outputs them in various formats (TOML, JSON, dotenv, shell exports, Terraform variables). It's perfect for:
 
 - **Configuration management**: Extract specific sections from complex config files
 - **Environment setup**: Convert TOML configs to environment variables
@@ -68,6 +68,9 @@ supertoml config.toml database --output dotenv
 
 # Extract a table and output as shell exports
 supertoml config.toml database --output exports
+
+# Extract a table and output as Terraform variables
+supertoml config.toml database --output tfvars
 ```
 
 ### Example
@@ -144,6 +147,19 @@ export "port=5432"
 export "user=admin"
 ```
 
+**Terraform variables format:**
+```bash
+supertoml config.toml database --output tfvars
+```
+
+```hcl
+host = "localhost"
+name = "myapp"
+password = "secret"
+port = 5432
+user = "admin"
+```
+
 ## Command Line Reference
 
 ### Syntax
@@ -164,6 +180,7 @@ supertoml <file> <table> [--output <format>]
   - `json`: Pretty-printed JSON
   - `dotenv`: Environment variable format (`KEY=value`)
   - `exports`: Shell export format (`export "KEY=value"`)
+  - `tfvars`: Terraform variables format (`key = "value"`)
 
 ### Examples
 
@@ -179,6 +196,9 @@ supertoml app.toml logging --output dotenv
 
 # Extract API config as shell exports
 supertoml app.toml api --output exports
+
+# Extract Terraform config as tfvars
+supertoml app.toml terraform --output tfvars
 ```
 
 ## Use Cases
@@ -273,6 +293,16 @@ Shell export format for sourcing in scripts:
 export "host=localhost"
 export "port=5432"
 export "name=myapp"
+```
+
+### Terraform Variables (tfvars)
+
+Terraform variables format for `.tfvars` files:
+
+```hcl
+host = "localhost"
+port = 5432
+name = "myapp"
 ```
 
 ## Error Handling

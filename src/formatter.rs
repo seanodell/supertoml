@@ -40,6 +40,14 @@ pub fn format_as_exports(values: &HashMap<String, toml::Value>) -> Result<String
     Ok(lines.join("\n"))
 }
 
+pub fn format_as_tfvars(values: &HashMap<String, toml::Value>) -> Result<String, SuperTomlError> {
+    let lines: Vec<String> = sorted_keys(values)
+        .into_iter()
+        .map(|key| format!("{} = {}", key, value_to_tfvars_string(&values[key])))
+        .collect();
+    Ok(lines.join("\n"))
+}
+
 fn resolved_values_to_json_value(values: &HashMap<String, toml::Value>) -> serde_json::Value {
     let mut json_map = serde_json::Map::new();
     for key in sorted_keys(values) {
@@ -80,6 +88,29 @@ fn value_to_string(value: &toml::Value) -> String {
         toml::Value::Datetime(dt) => dt.to_string(),
         toml::Value::Array(_) | toml::Value::Table(_) => {
             serde_json::to_string(&toml_value_to_json(value)).unwrap_or_else(|_| "null".to_string())
+        }
+    }
+}
+
+fn value_to_tfvars_string(value: &toml::Value) -> String {
+    match value {
+        toml::Value::String(s) => format!("\"{}\"", s),
+        toml::Value::Integer(i) => i.to_string(),
+        toml::Value::Float(f) => f.to_string(),
+        toml::Value::Boolean(b) => b.to_string(),
+        toml::Value::Datetime(dt) => format!("\"{}\"", dt),
+        toml::Value::Array(arr) => {
+            let items: Vec<String> = arr.iter().map(value_to_tfvars_string).collect();
+            format!("[{}]", items.join(", "))
+        }
+        toml::Value::Table(table) => {
+            let mut pairs: Vec<String> = Vec::new();
+            let mut keys: Vec<&String> = table.keys().collect();
+            keys.sort();
+            for key in keys {
+                pairs.push(format!("{} = {}", key, value_to_tfvars_string(&table[key])));
+            }
+            format!("{{{}}}", pairs.join(", "))
         }
     }
 }
