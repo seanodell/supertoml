@@ -1,5 +1,7 @@
 use supertoml::loader::load_toml_file;
-use supertoml::plugins::{NoopPlugin, ReferencePlugin, TemplatingPlugin};
+use supertoml::plugins::{
+    AfterPlugin, BeforePlugin, ImportPlugin, NoopPlugin, ReferencePlugin, TemplatingPlugin,
+};
 use supertoml::{
     format_as_dotenv, format_as_exports, format_as_json, format_as_toml, Plugin, Resolver,
     SuperTomlError,
@@ -83,9 +85,12 @@ fn run_test_file(test_file: &str) {
     );
 
     let mut resolver = Resolver::new(vec![
-        &NoopPlugin as &dyn Plugin,
+        &BeforePlugin as &dyn Plugin,
+        &ImportPlugin as &dyn Plugin,
         &ReferencePlugin as &dyn Plugin,
         &TemplatingPlugin as &dyn Plugin,
+        &AfterPlugin as &dyn Plugin,
+        &NoopPlugin as &dyn Plugin,
     ]);
 
     let result = resolver.resolve_table(test_file, &test_case.table);

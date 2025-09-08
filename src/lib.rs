@@ -3,6 +3,7 @@ mod formatter;
 pub mod loader;
 pub mod plugins;
 mod resolver;
+pub mod utils;
 
 pub use error::SuperTomlError;
 pub use formatter::{
