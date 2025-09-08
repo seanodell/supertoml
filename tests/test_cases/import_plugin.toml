@@ -1,0 +1,64 @@
+[test]
+name = "import_plugin"
+description = "Test the import plugin with external file loading and key transformation"
+table = "main"
+
+[main]
+app_name = "SuperTOML Test App"
+version = "1.0.0"
+
+# Import database configuration with db_ prefix
+# Import tools configuration with tool_ prefix
+_.import = [
+    { file = "mise.toml", table = "tools", key_format = "tool_{{key}}" }
+]
+
+# These values should be available after import and can be templated
+rust_version = "{{tool_rust}}"
+act_version = "{{tool_act}}"
+
+[expected.toml]
+content = '''
+act_version = "latest"
+app_name = "SuperTOML Test App"
+rust_version = "1.89.0"
+tool_act = "latest"
+tool_pre-commit = "3.7.0"
+tool_rust = "1.89.0"
+version = "1.0.0"
+'''
+
+[expected.json]
+content = '''
+{
+  "act_version": "latest",
+  "app_name": "SuperTOML Test App",
+  "rust_version": "1.89.0",
+  "tool_act": "latest",
+  "tool_pre-commit": "3.7.0",
+  "tool_rust": "1.89.0",
+  "version": "1.0.0"
+}
+'''
+
+[expected.dotenv]
+content = '''
+act_version=latest
+app_name=SuperTOML Test App
+rust_version=1.89.0
+tool_act=latest
+tool_pre-commit=3.7.0
+tool_rust=1.89.0
+version=1.0.0
+'''
+
+[expected.exports]
+content = '''
+export "act_version=latest"
+export "app_name=SuperTOML Test App"
+export "rust_version=1.89.0"
+export "tool_act=latest"
+export "tool_pre-commit=3.7.0"
+export "tool_rust=1.89.0"
+export "version=1.0.0"
+'''

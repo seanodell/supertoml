@@ -1,29 +1,8 @@
-use crate::{Plugin, SuperTomlError};
+use crate::{utils::toml_value_to_jinja, Plugin, SuperTomlError};
 use minijinja::{Environment, Value as JinjaValue};
 use std::collections::HashMap;
 
 pub struct TemplatingPlugin;
-
-fn toml_value_to_jinja(value: &toml::Value) -> JinjaValue {
-    match value {
-        toml::Value::String(s) => JinjaValue::from(s.as_str()),
-        toml::Value::Integer(i) => JinjaValue::from(*i),
-        toml::Value::Float(f) => JinjaValue::from(*f),
-        toml::Value::Boolean(b) => JinjaValue::from(*b),
-        toml::Value::Array(arr) => {
-            let jinja_arr: Vec<JinjaValue> = arr.iter().map(toml_value_to_jinja).collect();
-            JinjaValue::from(jinja_arr)
-        }
-        toml::Value::Table(table) => {
-            let mut jinja_map = HashMap::new();
-            for (k, v) in table {
-                jinja_map.insert(k.clone(), toml_value_to_jinja(v));
-            }
-            JinjaValue::from(jinja_map)
-        }
-        toml::Value::Datetime(dt) => JinjaValue::from(dt.to_string()),
-    }
-}
 
 fn process_value_with_jinja(
     value: &toml::Value,

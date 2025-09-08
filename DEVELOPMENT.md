@@ -37,9 +37,10 @@ SuperTOML can also be used as a Rust library:
 use supertoml::{Resolver, format_as_json};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Use standard plugins (before, templating, after)
+    // Use standard plugins (before, import, templating, after)
     let mut resolver = Resolver::new(vec![
         &supertoml::plugins::BeforePlugin as &dyn supertoml::Plugin,
+        &supertoml::plugins::ImportPlugin as &dyn supertoml::Plugin,
         &supertoml::plugins::TemplatingPlugin as &dyn supertoml::Plugin,
         &supertoml::plugins::AfterPlugin as &dyn supertoml::Plugin,
     ]);
@@ -142,11 +143,12 @@ _.my_plugin = { option1 = "config_value", option2 = 42 }
 #### Standard Plugins (Recommended)
 ```rust
 use supertoml::{Resolver, format_as_json};
-use supertoml::plugins::{TemplatingPlugin, BeforePlugin, AfterPlugin};
+use supertoml::plugins::{TemplatingPlugin, BeforePlugin, ImportPlugin, AfterPlugin};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let plugins: Vec<&'static dyn supertoml::Plugin> = vec![
         &BeforePlugin,
+        &ImportPlugin,
         &TemplatingPlugin,
         &AfterPlugin,
     ];
@@ -192,6 +194,15 @@ Processes string values through Minijinja templating using `resolver.values` as 
 Resolves multiple tables before processing the current table. Configuration:
 ```toml
 _.before = ["table1", "table2", "table3"]
+```
+
+**ImportPlugin**
+Imports key/value pairs from external TOML files with optional key transformation. Runs after dependency resolution but before templating so imported values can be used in templates. Configuration:
+```toml
+_.import = [
+    { file = "database.toml", table = "production", key_format = "db_{{key}}" },
+    { file = "tools.toml", table = "versions" }
+]
 ```
 
 **AfterPlugin**
