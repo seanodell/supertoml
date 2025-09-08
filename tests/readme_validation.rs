@@ -59,6 +59,8 @@ fn get_output_formats() -> Vec<OutputFormat> {
 fn get_resolved_values_for_testing() -> std::collections::HashMap<String, toml::Value> {
     // Extract the TOML example from README
     let readme_content = fs::read_to_string("README.md").expect("Failed to read README.md");
+    // Normalize line endings for cross-platform compatibility
+    let readme_content = readme_content.replace("\r\n", "\n");
 
     let toml_example =
         extract_toml_example(&readme_content).expect("Failed to extract TOML example from README");
@@ -118,6 +120,8 @@ fn test_output_format(format_name: &str) {
         .unwrap_or_else(|| panic!("Unknown format: {}", format_name));
 
     let readme_content = fs::read_to_string("README.md").expect("Failed to read README.md");
+    // Normalize line endings for cross-platform compatibility
+    let readme_content = readme_content.replace("\r\n", "\n");
 
     let expected_output =
         extract_output_from_readme(&readme_content, format.start_marker, format.end_marker)
