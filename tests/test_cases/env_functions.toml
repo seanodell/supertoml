@@ -1,0 +1,42 @@
+[test]
+name = "Custom Minijinja functions"
+description = "Test that custom functions like env() and env_or() work in templates"
+table = "app_config"
+
+[app_config]
+# Test env_or function with default value (should work regardless of whether env var exists)
+user_setting = "{{ env_or('NONEXISTENT_VAR', 'default_value') }}"
+app_name = "{{ env_or('APP_NAME', 'SuperTOML') }}"
+
+# Test that we can combine custom functions with built-in filters
+formatted_setting = "{{ env_or('USER_SETTING', 'test') | upper }}"
+
+# Test env function with environment variables that should exist on all platforms
+# PATH should exist on all systems
+has_path = "{% if env('PATH') %}true{% else %}false{% endif %}"
+path_length = "{{ env('PATH') | length > 0 }}"
+
+# Test combining env with filters - check if PATH contains certain common separators
+path_has_separator = "{% if ':' in env('PATH') or ';' in env('PATH') %}true{% else %}false{% endif %}"
+
+[expected.toml]
+content = '''
+app_name = "SuperTOML"
+formatted_setting = "TEST"
+has_path = "true"
+path_has_separator = "true"
+path_length = "true"
+user_setting = "default_value"
+'''
+
+[expected.json]
+content = '''
+{
+  "app_name": "SuperTOML",
+  "formatted_setting": "TEST",
+  "has_path": "true",
+  "path_has_separator": "true",
+  "path_length": "true",
+  "user_setting": "default_value"
+}
+'''

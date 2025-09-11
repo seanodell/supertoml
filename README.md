@@ -323,7 +323,7 @@ db_user = "app_user"
 [dev]
 _.before = ["global"]
 
-env = "dev"
+environment = "dev"
 namespace = "dev"
 
 db_host = "db.dev.example.com"
@@ -341,14 +341,16 @@ _.import = [
     { file = "mise.toml", table = "tools", key_format = "tool_{{key}}" }
 ]
 
-env = "prod"
+environment = "prod"
 namespace = "prod"
 
 db_host = "db.prod.example.com"
-db_password = "secret123"
+# Example: Get password from environment variable with fallback
+db_password = "{{ env_or('DB_PASSWORD', 'secret123') }}"
 
 api_host = "api.prod.example.com"
 api_secret_key = "sk-1234567890abcdef"
+
 
 # These values come from the imported mise.toml file
 rust_version = "{{ tool_rust }}"
@@ -358,12 +360,12 @@ _.after = ["final"]
 
 
 [final]
-app_name = "{{ env | upper }}-MyApp"
+app_name = "{{ environment | upper }}-MyApp"
 database_url = "postgresql://{{ db_user }}:{{ db_password }}@{{ db_host }}:{{ db_port }}/{{ db_name }}"
 api_endpoint = "https://{{ api_host }}:{{ api_port }}/{{ api_version }}"
-full_config_path = "/etc/myapp/{{ env }}/{{ namespace }}/config.json"
+full_config_path = "/etc/myapp/{{ environment }}/{{ namespace }}/config.json"
 
-is_production = "{% if env == 'production' %}true{% else %}false{% endif %}"
+is_production = "{% if environment == 'production' %}true{% else %}false{% endif %}"
 replica_count = "{% if debug %}1{% else %}3{% endif %}"
 
 _.after = ["post-final"]
@@ -398,7 +400,7 @@ db_port = 5432
 db_user = "app_user"
 debug = false
 deployment_name = "prod_myapp"
-env = "prod"
+environment = "prod"
 full_config_path = "/etc/myapp/prod/prod/config.json"
 is_production = "false"
 log_level = "info"
@@ -426,6 +428,7 @@ supertoml app.toml prod --output json
 **Output:**
 ```json
 {
+  "act_version": "latest",
   "api_endpoint": "https://api.prod.example.com:443/v1",
   "api_host": "api.prod.example.com",
   "api_port": 443,
@@ -446,12 +449,11 @@ supertoml app.toml prod --output json
   "db_user": "app_user",
   "debug": false,
   "deployment_name": "prod_myapp",
-  "env": "prod",
+  "environment": "prod",
   "full_config_path": "/etc/myapp/prod/prod/config.json",
   "is_production": "false",
   "log_level": "info",
   "namespace": "prod",
-  "act_version": "latest",
   "replica_count": "3",
   "rust_version": "1.89.0",
   "services": [
@@ -489,7 +491,7 @@ db_port=5432
 db_user=app_user
 debug=false
 deployment_name=prod_myapp
-env=prod
+environment=prod
 full_config_path=/etc/myapp/prod/prod/config.json
 is_production=false
 log_level=info
@@ -526,7 +528,7 @@ export "db_port=5432"
 export "db_user=app_user"
 export "debug=false"
 export "deployment_name=prod_myapp"
-export "env=prod"
+export "environment=prod"
 export "full_config_path=/etc/myapp/prod/prod/config.json"
 export "is_production=false"
 export "log_level=info"
@@ -547,6 +549,7 @@ supertoml app.toml prod --output tfvars
 
 **Output:**
 ```hcl
+act_version = "latest"
 api_endpoint = "https://api.prod.example.com:443/v1"
 api_host = "api.prod.example.com"
 api_port = 443
@@ -562,12 +565,11 @@ db_port = 5432
 db_user = "app_user"
 debug = false
 deployment_name = "prod_myapp"
-env = "prod"
+environment = "prod"
 full_config_path = "/etc/myapp/prod/prod/config.json"
 is_production = "false"
 log_level = "info"
 namespace = "prod"
-act_version = "latest"
 replica_count = "3"
 rust_version = "1.89.0"
 services = ["PROD-MyApp-web", "PROD-MyApp-worker", "PROD-MyApp-scheduler"]
@@ -599,6 +601,7 @@ In the example above:
 - **External Configuration Import**: `_.import` for loading key/value pairs from external TOML files with optional key transformation
 - **Template Processing**: `{{ variable }}` syntax for dynamic value substitution
 - **Advanced Template Filters**: `| upper`, `| lower`, `| replace()` for string transformations
+- **Custom Template Functions**: Built-in functions for environment variables and more
 - **Conditional Logic**: `{% if env == 'production' %}` statements for environment-specific configuration
 - **Recursive Template Resolution**: Templates in arrays and objects are fully resolved (e.g., `services` array and `config` object)
 - **Cross-table Variable Access**: Variables from `database`, `api`, and other dependency tables
@@ -614,6 +617,30 @@ SuperTOML provides clear error messages for common issues:
 - **Parse errors**: Detailed TOML syntax error reporting
 - **Table not found**: Specific table name in error message
 - **Type mismatches**: Clear indication when expected table is different type
+
+## Custom Template Functions
+
+SuperTOML provides built-in custom functions that can be used within Minijinja templates:
+
+### Environment Variable Functions
+
+- **`env(name)`**: Returns the value of an environment variable. Throws an error if the variable doesn't exist.
+- **`env_or(name, default)`**: Returns the value of an environment variable, or the default value if the variable doesn't exist.
+
+**Example:**
+```toml
+[config]
+database_url = "{{ env('DATABASE_URL') }}"
+debug_mode = "{{ env_or('DEBUG', 'false') }}"
+app_version = "{{ env_or('APP_VERSION', '1.0.0') }}"
+log_level = "{{ env_or('LOG_LEVEL', 'info') | upper }}"
+```
+
+These functions are particularly useful for:
+- Loading secrets from environment variables
+- Providing sensible defaults for optional configuration
+- Creating environment-specific configurations
+- Integrating with deployment systems that inject environment variables
 
 ## Examples
 

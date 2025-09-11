@@ -43,9 +43,26 @@ pub fn add_values_to_resolver(
 /// Create a shared Minijinja environment for template processing
 ///
 /// This ensures consistent template environment setup across all plugins
-/// that need templating functionality.
+/// that need templating functionality. Custom functions are registered here.
 pub fn create_template_environment() -> Environment<'static> {
-    Environment::new()
+    let mut env = Environment::new();
+
+    // Add custom function to access environment variables
+    env.add_function("env", |name: String| -> Result<String, minijinja::Error> {
+        std::env::var(&name).map_err(|_| {
+            minijinja::Error::new(
+                minijinja::ErrorKind::UndefinedError,
+                format!("Environment variable '{}' not found", name),
+            )
+        })
+    });
+
+    // Add custom function to get environment variable with default value
+    env.add_function("env_or", |name: String, default: String| -> String {
+        std::env::var(&name).unwrap_or(default)
+    });
+
+    env
 }
 
 /// Create a standardized template-related error
@@ -106,5 +123,43 @@ mod tests {
         // Just verify it doesn't crash - minijinja Value doesn't have direct type checking methods
         let _str_repr = jinja_val.to_string();
         assert!(!_str_repr.is_empty());
+    }
+
+    #[test]
+    fn test_custom_env_or_function() {
+        let env = create_template_environment();
+
+        // Test env_or with default value
+        let template = env
+            .template_from_str("{{ env_or('NONEXISTENT_VAR_12345', 'default') }}")
+            .unwrap();
+        let result = template.render(()).unwrap();
+        assert_eq!(result, "default");
+    }
+
+    #[test]
+    fn test_custom_env_or_function_with_existing_var() {
+        // Set a test environment variable
+        std::env::set_var("TEST_VAR_12345", "test_value");
+
+        let env = create_template_environment();
+        let template = env
+            .template_from_str("{{ env_or('TEST_VAR_12345', 'default') }}")
+            .unwrap();
+        let result = template.render(()).unwrap();
+        assert_eq!(result, "test_value");
+
+        // Clean up
+        std::env::remove_var("TEST_VAR_12345");
+    }
+
+    #[test]
+    fn test_custom_env_function_error() {
+        let env = create_template_environment();
+        let template = env
+            .template_from_str("{{ env('NONEXISTENT_VAR_12345') }}")
+            .unwrap();
+        let result = template.render(());
+        assert!(result.is_err());
     }
 }
