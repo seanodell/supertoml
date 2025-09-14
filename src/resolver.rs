@@ -1,6 +1,6 @@
 use crate::error::SuperTomlError;
 use crate::loader::{load_toml_file, TomlTable};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 #[macro_export]
 macro_rules! extract_config {
@@ -36,7 +36,7 @@ pub trait Plugin {
 pub struct Resolver {
     pub plugins: Vec<&'static dyn Plugin>,
     pub values: HashMap<String, toml::Value>,
-    pub processed_tables: HashSet<String>,
+    pub call_stack: Vec<String>,
     pub toml_file: Option<toml::Value>,
     pub file_path: Option<String>,
 }
@@ -46,7 +46,7 @@ impl Resolver {
         Self {
             plugins,
             values: HashMap::new(),
-            processed_tables: HashSet::new(),
+            call_stack: Vec::new(),
             toml_file: None,
             file_path: None,
         }
@@ -68,11 +68,14 @@ pub fn resolve_table_recursive(
     resolver: &mut Resolver,
     table_name: &str,
 ) -> Result<(), SuperTomlError> {
-    if resolver.processed_tables.contains(table_name) {
+    // Check if we're currently processing this table (cycle detection)
+    if resolver.call_stack.contains(&table_name.to_string()) {
         return Err(SuperTomlError::CycleDetected(table_name.to_string()));
     }
 
-    resolver.processed_tables.insert(table_name.to_string());
+    // Add to call stack for cycle detection
+    resolver.call_stack.push(table_name.to_string());
+
     let table = get_table_from_loaded_file(resolver, table_name)?;
 
     let mut table_values: HashMap<String, toml::Value> = HashMap::new();
@@ -84,6 +87,9 @@ pub fn resolve_table_recursive(
 
     let plugins_table = table.get("_").and_then(|v| v.as_table());
     process_plugins(resolver, &mut table_values, plugins_table)?;
+
+    // Remove from call stack
+    resolver.call_stack.pop();
 
     Ok(())
 }

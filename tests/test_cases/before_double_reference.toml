@@ -1,0 +1,22 @@
+[test]
+name = "before_double_reference"
+description = "Test that tables can be referenced multiple times so long as they are not circular"
+table = "table_b"
+
+[table_a]
+t = "a"
+
+[table_b]
+t = "b"
+_.before = ["table_a"]
+_.after = ["table_c"]
+
+[table_c]
+f = "{{ t }}"
+_.before = ["table_a"]
+
+[expected.toml]
+content = '''
+f = "a"
+t = "b"
+'''
