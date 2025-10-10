@@ -1,0 +1,2 @@
+[test]
+_.import = [{file="../dir2/sibling.toml", table="sibling_data"}]
