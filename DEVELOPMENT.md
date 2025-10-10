@@ -326,8 +326,8 @@ This ensures that every table resolution goes through the complete resolver proc
 The project includes comprehensive testing:
 
 ### Test Structure
-- **Integration tests**: `tests/integration_tests.rs`
-- **Test cases**: `tests/test_cases/*.toml`
+- **TOML tests**: `tests/toml_tests.rs`
+- **Test cases**: `tests/toml_test_cases/*.toml`
 - **Generated tests**: Build script automatically generates tests from test case files
 - **Plugin tests**: Noop plugin included in all integration tests
 
@@ -453,8 +453,8 @@ supertoml/
 │       ├── noop.rs      # Example noop plugin
 │       └── reference.rs # Example reference plugin with recursive resolution
 ├── tests/
-│   ├── integration_tests.rs    # Test framework
-│   └── test_cases/            # Test case definitions
+│   ├── toml_tests.rs          # Test framework
+│   └── toml_test_cases/       # Test case definitions
 ├── build.rs            # Build script for test generation
 ├── Cargo.toml          # Project configuration
 └── mise.toml          # Tool version specification
@@ -462,7 +462,7 @@ supertoml/
 
 ## Build Script
 
-The `build.rs` script automatically generates integration tests from TOML files in `tests/test_cases/`. This ensures all test cases are automatically included when new test files are added.
+The `build.rs` script automatically generates integration tests from TOML files in `tests/toml_test_cases/`. This ensures all test cases are automatically included when new test files are added.
 
 ## Adding New Features
 
@@ -515,7 +515,7 @@ OutputFormat {
 
 1. **New Plugin**: Implement `Plugin` trait and add to plugins directory
 2. **New Error Type**: Add to `SuperTomlError` enum with appropriate display message
-3. **New Test Case**: Add TOML file to `tests/test_cases/` directory
+3. **New Test Case**: Add TOML file to `tests/toml_test_cases/` directory
 
 ## Architecture Notes
 
