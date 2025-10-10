@@ -4,7 +4,7 @@ shopt -s expand_aliases
 
 cd "$(dirname "$0")"
 
-alias supertoml="$(cd ../../.. && pwd)/target/debug/supertoml"
+alias supertoml="${SUPERTOML_BIN}"
 
 # Test importing from sibling directory while running from a different location
 mkdir -p child

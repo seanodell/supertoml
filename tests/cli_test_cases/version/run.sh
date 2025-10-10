@@ -4,6 +4,6 @@ shopt -s expand_aliases
 
 cd "$(dirname "$0")"
 
-alias supertoml="$(cd ../../.. && pwd)/target/debug/supertoml"
+alias supertoml="${SUPERTOML_BIN}"
 
 supertoml --version
