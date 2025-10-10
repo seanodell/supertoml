@@ -6,7 +6,7 @@ fn main() {
     let out_dir = env::var_os("OUT_DIR").expect("OUT_DIR environment variable not set");
     let dest_path = Path::new(&out_dir).join("generated_tests.rs");
 
-    let test_files = glob::glob("tests/test_cases/*.toml")
+    let test_files = glob::glob("tests/toml_test_cases/*.toml")
         .expect("Failed to read test pattern")
         .filter_map(Result::ok)
         .collect::<Vec<_>>();
@@ -38,5 +38,5 @@ fn {}() {{
     }
 
     fs::write(&dest_path, generated_tests).expect("Failed to write generated tests file");
-    println!("cargo:rerun-if-changed=tests/test_cases");
+    println!("cargo:rerun-if-changed=tests/toml_test_cases");
 }
