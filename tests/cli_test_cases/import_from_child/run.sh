@@ -4,7 +4,7 @@ shopt -s expand_aliases
 
 cd "$(dirname "$0")"
 
-alias supertoml="$(cd ../../.. && pwd)/target/debug/supertoml"
+alias supertoml="${SUPERTOML_BIN}"
 
 # This should replicate the error: running from child directory with parent file that imports from parent
 mkdir -p child
