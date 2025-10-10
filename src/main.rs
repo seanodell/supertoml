@@ -23,6 +23,11 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
+    if let Err(e) = change_to_file_directory(&args.file) {
+        eprintln!("Error: {}", e);
+        std::process::exit(1);
+    }
+
     match run(&args) {
         Ok(output) => println!("{}", output),
         Err(e) => {
@@ -32,14 +37,44 @@ fn main() {
     }
 }
 
+fn change_to_file_directory(file_path: &str) -> Result<(), String> {
+    use std::path::Path;
+
+    let path = Path::new(file_path);
+
+    let absolute_path = path
+        .canonicalize()
+        .map_err(|e| format!("Failed to resolve file path '{}': {}", file_path, e))?;
+
+    if let Some(parent) = absolute_path.parent() {
+        std::env::set_current_dir(parent).map_err(|e| {
+            format!(
+                "Failed to change to directory '{}': {}",
+                parent.display(),
+                e
+            )
+        })?;
+    }
+
+    Ok(())
+}
+
 fn run(args: &Args) -> Result<String, supertoml::SuperTomlError> {
+    use std::path::Path;
+
     let mut resolver = supertoml::Resolver::new(vec![
         &supertoml::plugins::BeforePlugin as &dyn supertoml::Plugin,
         &supertoml::plugins::ImportPlugin as &dyn supertoml::Plugin,
         &supertoml::plugins::TemplatingPlugin as &dyn supertoml::Plugin,
         &supertoml::plugins::AfterPlugin as &dyn supertoml::Plugin,
     ]);
-    let resolved_values = resolver.resolve_table(&args.file, &args.table)?;
+
+    let filename = Path::new(&args.file)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or(&args.file);
+
+    let resolved_values = resolver.resolve_table(filename, &args.table)?;
 
     match args.output {
         OutputFormat::Toml => supertoml::format_as_toml(&resolved_values),
