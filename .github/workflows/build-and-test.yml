@@ -61,15 +61,6 @@ jobs:
               - mise
               - asdf
 
-          # Windows
-          - os: windows-latest
-            arch: windows-amd64
-            target: x86_64-pc-windows-msvc
-            packaging:
-              - chocolatey
-              - winget
-              - scoop
-
           # Linux
           - os: ubuntu-latest
             arch: linux-amd64
