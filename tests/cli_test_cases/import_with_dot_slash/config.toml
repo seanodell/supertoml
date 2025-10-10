@@ -1,0 +1,2 @@
+[test]
+_.import = [{file="./source.toml", table="source"}]

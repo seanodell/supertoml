@@ -1,0 +1,2 @@
+[test]
+_.import = [{file="data.toml", table="values"}]
