@@ -182,6 +182,7 @@ host = "localhost"
 fn test_absolute_path() {
     // Create imported file content
     let imported_content = r#"
+[server]
 name = "test-server"
 port = 8080
 "#;
@@ -189,7 +190,9 @@ port = 8080
     // Create main file content with import (no file path, relative to current file)
     let test_content = r#"
 [server]
-__import__ = "cli_test_absolute_import.toml"
+_.import = [
+    { file = "cli_test_absolute_import.toml", table = "server" }
+]
 "#;
 
     let imported_file = create_test_file("cli_test_absolute_import.toml", imported_content);
@@ -215,16 +218,28 @@ __import__ = "cli_test_absolute_import.toml"
         .output()
         .expect("Failed to execute supertoml");
 
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    if !output.status.success() {
+        eprintln!("Command failed!");
+        eprintln!("stdout: {}", stdout);
+        eprintln!("stderr: {}", stderr);
+    }
+
     assert!(
         output.status.success(),
         "Processing with absolute path should succeed"
     );
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("name"), "Output should contain 'name'");
+    assert!(
+        stdout.contains("name"),
+        "Output should contain 'name'. Actual output: {}",
+        stdout
+    );
     assert!(
         stdout.contains("test-server"),
-        "Output should contain 'test-server'"
+        "Output should contain 'test-server'. Actual output: {}",
+        stdout
     );
 }
 
@@ -232,6 +247,7 @@ __import__ = "cli_test_absolute_import.toml"
 fn test_relative_path() {
     // Create imported file content
     let imported_content = r#"
+[config]
 enabled = true
 timeout = 30
 "#;
@@ -239,7 +255,9 @@ timeout = 30
     // Create main file content with import (no file path, relative to current file)
     let test_content = r#"
 [config]
-__import__ = "cli_test_relative_import.toml"
+_.import = [
+    { file = "cli_test_relative_import.toml", table = "config" }
+]
 "#;
 
     // Create test file in current directory
