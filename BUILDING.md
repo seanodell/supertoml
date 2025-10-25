@@ -1,37 +1,55 @@
-# Building and Distributing SuperTOML
+# Building SuperTOML
 
-This document explains how to build SuperTOML and distribute it through various package managers.
+This document explains how to build SuperTOML from source.
 
-## Supported Platforms
+## Prerequisites
 
-- **macOS**: x86_64 (Intel), aarch64 (Apple Silicon)
-- **Windows**: x86_64 (Intel/AMD)
-- **Linux**: x86_64 (Intel/AMD), aarch64 (ARM64), i686 (32-bit Intel)
+- **Rust toolchain** (latest stable) - managed via `mise`
+- **Docker** (optional, for clean environment testing)
 
-## Local Development
+## Development Setup
 
-### Prerequisites
-- Rust toolchain (latest stable)
-- Docker (for testing in clean environment)
+### Using mise (Recommended)
 
-### Building and Testing
+The project uses `mise` for tool management. Install mise first:
 
-Using `mise` tasks (recommended):
+```bash
+# Install mise (if not already installed)
+curl https://mise.jdx.dev/install.sh | sh
+
+# Install project tools
+mise install
+```
+
+This will install:
+- Rust 1.89.0
+- pre-commit 3.7.0
+- act (latest) for local GitHub Actions testing
+
+### Manual Setup
+
+If you prefer not to use mise:
+
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Install pre-commit
+pip install pre-commit
+
+# Install act (optional, for local GitHub Actions testing)
+curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+```
+
+## Building
+
+### Available Tasks
+
+The project includes several `mise` tasks for building:
+
 ```bash
 # Build for your current platform
 mise run build
-
-# Run tests
-mise run test
-
-# Check code quality
-mise run check
-
-# Format code
-mise run fmt
-
-# Check code formatting (CI)
-mise run fmt-check
 
 # Clean build artifacts
 mise run clean
@@ -40,51 +58,22 @@ mise run clean
 mise run docker-test
 ```
 
-Or using cargo directly:
+### Manual Commands
+
+You can also use cargo directly:
+
 ```bash
 # Build for your current platform
 cargo build --release
 
-# Run tests
-cargo test
-
-# Check code quality
-cargo check && cargo clippy
-
-# Format code
-cargo fmt
-
-# Check formatting
-cargo fmt -- --check
+# Clean build artifacts
+cargo clean
 ```
 
-## Multi-Platform Builds
-
-**All multi-platform builds are handled automatically by GitHub Actions.**
-
-### Creating a Release
-Releases are created automatically when you push a tag to GitHub:
-
-```bash
-# 1. Update version in Cargo.toml
-# 2. Create and push a tag
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-This will automatically:
-1. Build for all platforms (macOS, Windows, Linux)
-2. Run tests on all platforms
-3. Create a GitHub release with all binaries
-4. Generate release notes
-
-### Checking Build Progress
-After pushing a tag, check the build progress at:
-https://github.com/seanodell/supertoml/actions
-
-## Testing
+## Testing Builds
 
 ### Local Testing
+
 ```bash
 # Run all tests
 mise run test
@@ -93,9 +82,13 @@ cargo test
 
 # Run tests with output
 cargo test -- --nocapture
+
+# Run specific test
+cargo test test_name
 ```
 
 ### Docker Testing
+
 ```bash
 # Test in Docker environment
 mise run docker-test
@@ -108,83 +101,108 @@ Use Docker testing when you want to:
 - Test the final binary in isolation
 
 ### Testing Built Binaries
+
 ```bash
 # Test the locally built binary
 ./target/release/supertoml --help
 ./target/release/supertoml test.toml test
 ```
 
-## Distribution
+## Cross-Platform Building
 
-### GitHub Releases (Automated)
-Releases are created automatically when you push a tag. Each release includes:
-- Binaries for all supported platforms
-- SHA256 checksums
-- Release notes
+### Supported Targets
 
-### Package Managers
+- `x86_64-apple-darwin` (macOS Intel)
+- `aarch64-apple-darwin` (macOS Apple Silicon)
+- `x86_64-unknown-linux-gnu` (Linux x86_64)
+- `aarch64-unknown-linux-gnu` (Linux ARM64)
+- `i686-unknown-linux-gnu` (Linux 32-bit)
 
-#### Homebrew
-To add to Homebrew core:
-1. Fork the Homebrew/homebrew-core repository
-2. Add your formula to `Formula/supertoml.rb`
-3. Submit a pull request
+### Cross-Compilation
 
-#### Mise
-To add to mise registry:
-1. Submit a pull request to the mise registry
-2. Include installation URLs for all platforms
-
-#### Cargo Install
-Publish to crates.io:
 ```bash
-# Publish to crates.io
-cargo publish
+# Add target toolchain
+rustup target add x86_64-unknown-linux-gnu
 
-# Users can then install with
-cargo install supertoml
+# Build for specific target
+cargo build --release --target x86_64-unknown-linux-gnu
+
+# Build for macOS from Linux (requires macOS SDK)
+cargo build --release --target x86_64-apple-darwin
 ```
 
-## CI/CD Pipeline
+### Docker Cross-Compilation
 
-The GitHub Actions workflow (`.github/workflows/release.yml`) handles:
+For clean cross-compilation builds:
 
-1. **Multi-platform builds** using matrix strategy
-2. **Cross-compilation** for all target platforms
-3. **Automated testing** of built binaries
-4. **Release creation** with all artifacts
-5. **SHA256 calculation** for package managers
+```bash
+# Build in Docker container
+docker run --rm -v $(pwd):/app -w /app rust:latest cargo build --release
+```
 
-## Release Process
+## Build Optimization
 
-1. **Update version** in `Cargo.toml`
-2. **Create and push tag**:
-   ```bash
-   git tag v0.1.0
-   git push origin v0.1.0
-   ```
-3. **Wait for CI** to build and release (check GitHub Actions)
-4. **Submit to package managers** (if desired)
-5. **Test installations** from all sources
+### Release Builds
+
+```bash
+# Optimized release build
+cargo build --release
+
+# Strip debug symbols (reduces binary size)
+strip target/release/supertoml
+```
+
+### Build Configuration
+
+The project uses default Rust optimization settings:
+- **Debug builds**: Fast compilation, debug symbols
+- **Release builds**: Optimized for performance, no debug symbols
 
 ## Troubleshooting
 
-### Local Build Issues
-- Ensure you have the latest Rust toolchain: `rustup update`
-- Clean and rebuild: `mise run clean && mise run build`
+### Build Issues
 
-### GitHub Actions Issues
-- Check the Actions tab for detailed error messages
-- Ensure all tests pass locally before pushing a tag
-- Verify the tag format: `v0.1.0` (not `0.1.0`)
+```bash
+# Update Rust toolchain
+rustup update
 
-### Package Manager Issues
-- Verify SHA256 checksums match the released binaries
-- Test the formula locally before submitting to package managers
+# Clean and rebuild
+mise run clean && mise run build
 
-## Security Considerations
+# Check for dependency issues
+cargo tree
+```
 
-- **Code signing**: Consider signing binaries for macOS
-- **Reproducible builds**: Ensure consistent builds across environments
-- **Vulnerability scanning**: Scan dependencies regularly
-- **Checksums**: Always provide SHA256 checksums for downloads
+### Cross-Compilation Issues
+
+- Ensure target toolchains are installed: `rustup target add <target>`
+- Check that cross-compilation dependencies are available
+- Use Docker testing for clean environment validation
+
+### Test Failures
+
+```bash
+# Run tests with verbose output
+cargo test -- --nocapture
+
+# Run specific test
+cargo test_name
+
+# Run tests in Docker
+mise run docker-test
+```
+
+## Build Artifacts
+
+After building, you'll find:
+
+- **Debug binary**: `target/debug/supertoml`
+- **Release binary**: `target/release/supertoml`
+- **Cross-compiled binaries**: `target/<target>/release/supertoml`
+
+## Performance Tips
+
+- **Use `cargo check`** for fast feedback during development
+- **Use `cargo build`** for debug builds during development
+- **Use `cargo build --release`** for production builds
+- **Use Docker** for clean, reproducible builds
