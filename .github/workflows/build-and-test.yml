@@ -3,19 +3,14 @@ name: Build and Test
 on:
   workflow_call:
     inputs:
-      create_release:
-        description: 'Whether to create a GitHub release with artifacts'
+      upload_artifacts:
+        description: "Whether to upload artifacts to GitHub"
         required: false
         default: false
         type: boolean
-      draft_release:
-        description: 'Whether the release should be a draft'
-        required: false
-        default: true
-        type: boolean
     outputs:
       version:
-        description: 'The version extracted from Cargo.toml'
+        description: "The version extracted from Cargo.toml"
         value: ${{ jobs.extract-version.outputs.version }}
 
 env:
@@ -146,7 +141,7 @@ jobs:
           fi
 
       - name: Package binary
-        if: inputs.create_release
+        if: inputs.upload_artifacts
         shell: bash
         run: |
           # Create packages directory
@@ -212,7 +207,7 @@ jobs:
           cargo clippy --target ${{ matrix.target }} -- -D warnings
 
       - name: Check formatting
-        if: runner.os != 'Windows'  # Only run once, avoid Windows line ending issues
+        if: runner.os != 'Windows' # Only run once, avoid Windows line ending issues
         run: cargo fmt -- --check
 
       - name: Test release binary
@@ -236,61 +231,9 @@ jobs:
           fi
 
       - name: Upload artifact
-        if: inputs.create_release
+        if: inputs.upload_artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.arch }}
           path: packages/
           exclude: "*.d *.pdb"
-
-  create-release:
-    name: Create Release
-    if: inputs.create_release
-    needs: [build, extract-version]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: packages/
-
-      - name: List downloaded files
-        run: |
-          echo "All files in packages directory:"
-          find packages/ -type f
-
-      - name: Extract release notes from CHANGELOG
-        id: changelog
-        run: |
-          VERSION="${{ needs.extract-version.outputs.version }}"
-          # Extract the section for this version from CHANGELOG.md
-          # Look for the version header and extract everything until the next version or end of file
-          awk "/^## \[$VERSION\]/ {flag=1; next} /^## \[/ && flag {flag=0} flag" CHANGELOG.md > release_notes.md
-
-          # Check if we found any content
-          if [ -s release_notes.md ]; then
-            echo "Found release notes for version $VERSION"
-            cat release_notes.md
-          else
-            echo "No release notes found for version $VERSION, using default"
-            echo "Release v$VERSION" > release_notes.md
-          fi
-
-      - name: Create release
-        uses: softprops/action-gh-release@v2
-        with:
-          target_commitish: ${{ github.sha }}
-          tag_name: v${{ needs.extract-version.outputs.version }}
-          name: Release v${{ needs.extract-version.outputs.version }}
-          body_path: release_notes.md
-          files: packages/**/*
-          draft: ${{ inputs.draft_release }}
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

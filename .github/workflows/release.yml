@@ -2,18 +2,65 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main_release]
 
 permissions:
   contents: write
 
 jobs:
-  release:
-    name: Build and Release
+  build-and-test:
+    name: Build and Test
     uses: ./.github/workflows/build-and-test.yml
     with:
-      create_release: true
-      draft_release: true
-    permissions:
-      contents: write
+      upload_artifacts: true
+
+  create-release:
+    name: Create Release
+    needs: [build-and-test]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: packages/
+
+      - name: List downloaded files
+        run: |
+          echo "All files in packages directory:"
+          find packages/ -type f
+
+      - name: Extract release notes from CHANGELOG
+        id: changelog
+        run: |
+          VERSION="${{ needs.build-and-test.outputs.version }}"
+          # Extract the section for this version from CHANGELOG.md
+          # Look for the version header and extract everything until the next version or end of file
+          awk "/^## \[$VERSION\]/ {flag=1; next} /^## \[/ && flag {flag=0} flag" CHANGELOG.md > release_notes.md
+
+          # Check if we found any content
+          if [ -s release_notes.md ]; then
+            echo "Found release notes for version $VERSION"
+            cat release_notes.md
+          else
+            echo "No release notes found for version $VERSION, aborting release"
+            exit 1
+          fi
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          target_commitish: ${{ github.sha }}
+          tag_name: v${{ needs.build-and-test.outputs.version }}
+          name: Release v${{ needs.build-and-test.outputs.version }}
+          body_path: release_notes.md
+          files: packages/**/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
