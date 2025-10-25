@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-10-10
+
+### Fixed
+- Fixed import path resolution to resolve paths relative to the source file directory instead of the current working directory
+- Fixed CLI test scripts to use SUPERTOML_BIN environment variable for better test isolation
+
+### Added
+- Added comprehensive CLI integration tests with test cases for various import path scenarios
+- Added test cases for importing from child directories, nested children, sibling directories, and dot-slash imports
+
+### Changed
+- Refactored test organization by renaming `test_cases` to `toml_test_cases` for better clarity and organization
+- Improved test infrastructure with better build system integration
+
+### Removed
+- Dropped Windows support and removed Windows build workflow from CI/CD pipeline
+
 ## [0.5.0] - 2025-09-14
 
 ### Fixed
