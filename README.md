@@ -26,13 +26,13 @@ If you use [mise](https://mise.jdx.dev/) for version management:
 
 ```bash
 # Install directly using ubi backend
-mise install ubi:seanodell/supertoml@latest
+mise install ubi:supertoml/supertoml@latest
 ```
 
 Or add to your `mise.toml`:
 ```toml
 [tools]
-"ubi:seanodell/supertoml" = "latest"
+"ubi:supertoml/supertoml" = "latest"
 ```
 
 mise will automatically download the appropriate binary for your platform from GitHub releases.
@@ -41,12 +41,12 @@ mise will automatically download the appropriate binary for your platform from G
 
 ### From GitHub Releases
 
-Download the latest binary for your platform from [GitHub Releases](https://github.com/seanodell/supertoml/releases).
+Download the latest binary for your platform from [GitHub Releases](https://github.com/supertoml/supertoml/releases).
 
 ### From Source
 
 ```bash
-git clone https://github.com/seanodell/supertoml.git
+git clone https://github.com/supertoml/supertoml.git
 cd supertoml
 cargo build --release
 ```
@@ -751,7 +751,7 @@ supertoml docker.toml app --output json
 
 ### Getting Help
 
-- Check the [GitHub repository](https://github.com/seanodell/supertoml) for issues and discussions
+- Check the [GitHub repository](https://github.com/supertoml/supertoml) for issues and discussions
 - Review the [development documentation](DEVELOPMENT.md) for advanced usage
 - Open an issue for bugs or feature requests
 
