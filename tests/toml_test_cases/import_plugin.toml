@@ -23,6 +23,7 @@ act_version = "latest"
 app_name = "SuperTOML Test App"
 rust_version = "1.89.0"
 tool_act = "latest"
+tool_gh = "latest"
 tool_pre-commit = "3.7.0"
 tool_rust = "1.89.0"
 version = "1.0.0"
@@ -35,6 +36,7 @@ content = '''
   "app_name": "SuperTOML Test App",
   "rust_version": "1.89.0",
   "tool_act": "latest",
+  "tool_gh": "latest",
   "tool_pre-commit": "3.7.0",
   "tool_rust": "1.89.0",
   "version": "1.0.0"
@@ -47,6 +49,7 @@ act_version=latest
 app_name=SuperTOML Test App
 rust_version=1.89.0
 tool_act=latest
+tool_gh=latest
 tool_pre-commit=3.7.0
 tool_rust=1.89.0
 version=1.0.0
@@ -58,6 +61,7 @@ export "act_version=latest"
 export "app_name=SuperTOML Test App"
 export "rust_version=1.89.0"
 export "tool_act=latest"
+export "tool_gh=latest"
 export "tool_pre-commit=3.7.0"
 export "tool_rust=1.89.0"
 export "version=1.0.0"
