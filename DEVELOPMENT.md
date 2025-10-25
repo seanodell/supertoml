@@ -22,7 +22,7 @@ SuperTOML is both a command-line tool and a Rust library designed to work with T
 ## Building from Source
 
 ```bash
-git clone https://github.com/seanodell/supertoml.git
+git clone https://github.com/supertoml/supertoml.git
 cd supertoml
 cargo build --release
 ```
@@ -408,7 +408,7 @@ We welcome contributions from the community! Whether you're reporting bugs, requ
 
 Before reporting a bug, please:
 
-1. **Check existing issues** - Search the [GitHub issues](https://github.com/seanodell/supertoml/issues) to see if the bug has already been reported
+1. **Check existing issues** - Search the [GitHub issues](https://github.com/supertoml/supertoml/issues) to see if the bug has already been reported
 2. **Test with the latest version** - Make sure you're using the most recent release
 3. **Provide a minimal example** - Create a small TOML file that reproduces the issue
 4. **Include system information** - OS, Rust version, SuperTOML version
@@ -483,7 +483,7 @@ We welcome code contributions! Here's how to get started:
    ```
 3. **Add the upstream remote**:
    ```bash
-   git remote add upstream https://github.com/seanodell/supertoml.git
+   git remote add upstream https://github.com/supertoml/supertoml.git
    ```
 4. **Create a feature branch**:
    ```bash
