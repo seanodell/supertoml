@@ -70,49 +70,14 @@ This means plugins should be designed to work with the dependency order and cann
 
 ### Creating Plugins
 
-Plugins allow custom processing of table data with type-safe configuration:
+Plugins implement the `Plugin` trait with type-safe configuration using the `extract_config!` macro. Key points:
 
-```rust
-use supertoml::{Plugin, SuperTomlError, extract_config};
-use std::collections::HashMap;
-use serde::Deserialize;
+- **Configuration**: Use `extract_config!(config, YourConfigType, plugin_name)?` for type-safe config extraction
+- **Processing**: Access `resolver.values`, `resolver.toml_file`, and call `resolve_table_recursive()` for dependencies
+- **Values**: Use `crate::utils::add_values_to_resolver(resolver, table_values)` to add processed values
+- **Chain Safety**: Don't drain `table_values` as they may be passed to other plugins
 
-#[derive(Deserialize)]
-struct MyPluginConfig {
-    option1: String,
-    option2: Option<i32>,
-}
-
-struct MyPlugin;
-
-impl Plugin for MyPlugin {
-    fn name(&self) -> &str {
-        "my_plugin"
-    }
-
-    fn process(
-        &self,
-        resolver: &mut supertoml::Resolver,
-        table_values: &mut HashMap<String, toml::Value>,
-        config: toml::Value,
-    ) -> Result<(), SuperTomlError> {
-        let config: MyPluginConfig = extract_config!(config, MyPluginConfig, self.name())?;
-
-        // Use config.option1, config.option2, etc.
-        // Custom processing logic here
-        // Access resolver.values, resolver.toml_file, etc.
-        // Call resolver.resolve_table_recursive() for recursive processing
-
-        // Important: Plugins can modify table_values, but should not drain them
-        // as they may be passed to other plugins in the processing chain
-
-        // Add values to resolver.values if needed
-        crate::utils::add_values_to_resolver(resolver, table_values);
-
-        Ok(())
-    }
-}
-```
+See `src/plugins/` for implementation examples.
 
 ### Plugin Behavior
 
@@ -136,47 +101,21 @@ key2 = "value2"
 _.my_plugin = { option1 = "config_value", option2 = 42 }
 ```
 
+### Meta Values Implementation
+
+Meta values provide processing context to templates through a `_` object that contains processing arguments like `table_name`, `output_format`, and `file_path`. The implementation is found in:
+
+- **Storage**: `src/resolver.rs` - Meta values are stored with the `_` key
+- **Template Access**: `src/plugins/templating.rs` and `src/plugins/import.rs` - `_` object is added to template context
+- **Usage**: Templates access meta values via `{{ _.args.* }}` syntax
+
+Meta values are only available in templates, not in plugin configuration (which uses `_` syntax).
+
 ### Using Plugins
 
-#### Standard Plugins (Recommended)
-```rust
-use supertoml::{Resolver, format_as_json};
-use supertoml::plugins::{TemplatingPlugin, BeforePlugin, ImportPlugin, AfterPlugin};
+Create a `Resolver` with your desired plugins and call `resolve_table()`. Standard plugins include `BeforePlugin`, `ImportPlugin`, `TemplatingPlugin`, and `AfterPlugin`. Development plugins include `NoopPlugin` and `ReferencePlugin`.
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let plugins: Vec<&'static dyn supertoml::Plugin> = vec![
-        &BeforePlugin,
-        &ImportPlugin,
-        &TemplatingPlugin,
-        &AfterPlugin,
-    ];
-
-    let mut resolver = Resolver::new(plugins);
-    let values = resolver.resolve_table("config.toml", "my_table")?;
-    let json_output = format_as_json(&values)?;
-    println!("{}", json_output);
-    Ok(())
-}
-```
-
-#### Development/Testing Plugins
-```rust
-use supertoml::{Resolver, format_as_json};
-use supertoml::plugins::{NoopPlugin, ReferencePlugin};
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let plugins: Vec<&'static dyn supertoml::Plugin> = vec![
-        &NoopPlugin,
-        &ReferencePlugin,
-    ];
-
-    let mut resolver = Resolver::new(plugins);
-    let values = resolver.resolve_table("config.toml", "my_table")?;
-    let json_output = format_as_json(&values)?;
-    println!("{}", json_output);
-    Ok(())
-}
-```
+See `src/main.rs` for CLI usage examples and `src/lib.rs` for library exports.
 
 ### Built-in Plugins
 
@@ -186,7 +125,7 @@ SuperTOML comes with several built-in plugins, categorized as follows:
 These plugins are automatically included when using SuperTOML and provide core functionality:
 
 **TemplatingPlugin**
-Processes string values through Minijinja templating using `resolver.values` as context. Always runs and requires no configuration.
+Processes string values through Minijinja templating using `resolver.values` as context. Always runs and requires no configuration. Provides access to meta values through the `_` object in templates.
 
 **BeforePlugin**
 Resolves multiple tables before processing the current table. Configuration:
@@ -195,7 +134,7 @@ _.before = ["table1", "table2", "table3"]
 ```
 
 **ImportPlugin**
-Imports key/value pairs from external TOML files with optional key transformation. Runs after dependency resolution but before templating so imported values can be used in templates. Configuration:
+Imports key/value pairs from external TOML files with optional key transformation. Runs after dependency resolution but before templating so imported values can be used in templates. Supports key transformation using templates with access to meta values. Configuration:
 ```toml
 _.import = [
     { file = "database.toml", table = "production", key_format = "db_{{key}}" },
@@ -222,81 +161,49 @@ _.reference = { table = "other_table" }
 ```
 Useful for testing recursive resolution scenarios.
 
+### Plugin Implementation Details
+
+#### TemplatingPlugin (`src/plugins/templating.rs`)
+- Recursively processes nested TOML structures (strings, arrays, tables)
+- Integrates meta values (`_` object) into template context
+- Handles template rendering with Minijinja
+
+#### ImportPlugin (`src/plugins/import.rs`)
+- Supports key transformation using templates
+- Provides meta values access in key transformation templates
+- Handles multiple import configurations
+
+#### BeforePlugin/AfterPlugin (`src/plugins/before.rs`, `src/plugins/after.rs`)
+- Implements dependency resolution with cycle detection
+- Processes multiple table dependencies
+- Maintains resolver state across dependencies
+
 ### Plugin Config Types
 
-Your plugin config can be any valid TOML type:
-
-```toml
-# Simple string
-_.simple = "hello"
-
-# Number
-_.count = 42
-
-# Boolean
-_.enabled = true
-
-# String array
-_.list = ["item1", "item2", "item3"]
-
-# Complex structure
-_.complex = {
-    database = { host = "localhost", port = 5432 },
-    cache = { ttl = 300, size = 1000 }
-}
-```
+Plugin configuration can be any valid TOML type (strings, numbers, booleans, arrays, tables). Use the `extract_config!` macro with appropriate Rust types for type-safe deserialization.
 
 ## Architecture
 
 ### Core Components
 
 #### 1. **Resolver** (`src/resolver.rs`)
-The heart of SuperTOML, responsible for:
-- Loading and parsing TOML files
-- Extracting specific tables
-- Processing tables through plugins
-- Detecting and preventing circular dependencies
-- Managing resolved values
+Core resolution logic, plugin orchestration, and circular dependency detection.
 
 #### 2. **Loader** (`src/loader.rs`)
-Handles TOML file operations:
-- File reading and parsing
-- Table extraction utilities
-- Type conversion traits (`FromTomlValue`)
-- Helper extensions for TOML tables
+TOML file operations, parsing, and table extraction utilities.
 
 #### 3. **Formatter** (`src/formatter.rs`)
-Converts resolved data to various output formats:
-- **TOML**: Native TOML format
-- **JSON**: Pretty-printed JSON
-- **Dotenv**: Environment variable format (`KEY=value`)
-- **Exports**: Shell export format (`export "KEY=value"`)
-- **Tfvars**: Terraform variables format (`key = "value"`)
+Output formatting to JSON, TOML, YAML, dotenv, exports, tfvars.
 
 #### 4. **Error Handling** (`src/error.rs`)
-Comprehensive error types:
-- File I/O errors
-- TOML parsing errors
-- Table resolution errors
-- Plugin errors
-- Cycle detection errors
+Custom error types for file I/O, parsing, resolution, and plugin errors.
 
 #### 5. **Plugin System** (`src/resolver.rs`)
-Extensible architecture for custom processing:
-- Simple `Plugin` trait with type-safe configuration extraction
-- `extract_config!` macro for easy deserialization
-- Support for any TOML data type as configuration
-- Full recursive resolution support - plugins can resolve other tables
-- Ownership transfer design to avoid Rust borrowing conflicts
+Extensible architecture with `Plugin` trait, `extract_config!` macro, and recursive resolution support.
 
-#### 6. **Shared Utilities** (`src/utils.rs`)
-Common functions used across multiple plugins:
-- **`toml_value_to_jinja()`**: Converts TOML values to Minijinja template values
-- **`add_values_to_resolver()`**: Standard pattern for adding table values to resolver context
-- **`create_template_environment()`**: Creates consistently configured Minijinja environments
-- **`template_error()`**: Creates standardized template-related error messages
+#### 6. **Utilities** (`src/utils.rs`)
+Template environment setup, value management, and common utility functions.
 
-These utilities ensure consistency across plugins and reduce code duplication.
 
 ### Data Flow
 
@@ -304,22 +211,24 @@ These utilities ensure consistency across plugins and reduce code duplication.
 TOML File → Loader → Resolver → Plugins → Formatter → Output
 ```
 
-1. **Load**: Read and parse TOML file
-2. **Extract**: Extract specified table
-3. **Resolve**: Process through resolver and plugins (with recursive resolution)
-4. **Format**: Convert to requested output format
-5. **Output**: Display or return formatted result
+1. **Load**: Parse TOML file and extract specified table
+2. **Resolve**: Process table through plugins in order
+3. **Format**: Convert resolved values to requested output format
+4. **Output**: Display or return formatted result
 
 ### Recursive Resolution
 
-Plugins can trigger recursive resolution of other tables within the same TOML file:
+Plugins can trigger recursive resolution of other tables using `crate::resolve_table_recursive(resolver, &table_name)?`. This ensures every table resolution goes through the complete resolver process, including plugin processing, even when referenced by other tables.
 
-```rust
-// Inside a plugin's process method
-crate::resolve_table_recursive(resolver, &config.table)?;
-```
+### Meta Values Implementation
 
-This ensures that every table resolution goes through the complete resolver process, including plugin processing, even when referenced by other tables.
+The meta values system provides processing context to templates through a `_` object. Key implementation details:
+
+- **Storage**: Meta values are stored with the `_` key in `resolver.meta_values`
+- **Template Access**: Both `TemplatingPlugin` and `ImportPlugin` add the `_` object to template context
+- **Utility Function**: `create_template_environment_with_meta()` in `src/utils.rs` handles environment setup
+- **Conflict Avoidance**: Uses `_` for both meta values and plugin configuration
+- **Scope**: Meta values are only available in templates, not in plugin configuration
 
 ## Testing
 
@@ -378,64 +287,41 @@ key=value
 content = '''
 export "key=value"
 '''
+
+[expected.tfvars]
+content = '''
+key = "value"
+'''
 ```
+
+**Available Test Cases:**
+- **Basic functionality**: `basic_strings.toml`, `templating.toml`, `templating_with_reference.toml`
+- **Plugin testing**: `import_plugin.toml`, `before_plugin.toml`, `after_plugin.toml`, `noop_plugin.toml`
+- **Dependency resolution**: `before_double_reference.toml`, `after_double_reference.toml`, `recursive_plugin.toml`
+- **Error handling**: `circular_reference.toml`, `env_function_errors.toml`
+- **Advanced features**: `output_formats.toml`, `mixed_types.toml`, `env_functions.toml`, `meta_values.toml`
+- **Reference testing**: `reference_plugin.toml`, `recursive_templating.toml`
 
 ### Error Testing
 
-Test cases can also test for expected errors by adding an `expected_error` field:
-
-```toml
-[test]
-name = "Error test"
-description = "Test that specific errors are raised"
-table = "problematic_table"
-expected_error = "Cycle detected"
-
-[problematic_table]
-# This will cause a cycle detection error
-_.reference = { table = "problematic_table" }
-```
-
-The `expected_error` field accepts a regex pattern for partial matching of error messages.
+Test cases can test for expected errors by adding an `expected_error` field that accepts regex patterns for partial matching of error messages.
 
 ### Plugin Testing
 
-The integration test framework automatically includes all built-in plugins for tests:
-
-```toml
-[test]
-name = "Plugin test"
-description = "Test plugin functionality"
-table = "config"
-
-[config]
-app_name = "test-app"
-_.reference = { table = "other_table" }
-_.before = ["setup", "init"]
-_.after = ["cleanup", "logging"]
-```
-
-This allows testing of various plugin combinations and recursive resolution scenarios.
+The integration test framework automatically includes all built-in plugins for tests, allowing testing of various plugin combinations and recursive resolution scenarios.
 
 ## Dependencies
 
-- **clap**: Command-line argument parsing with derive macros
+- **clap**: Command-line argument parsing
 - **toml**: TOML parsing and serialization
 - **serde_json**: JSON handling and pretty printing
 - **serde**: Serialization framework
-- **minijinja**: Template engine for string interpolation and templating plugin
+- **minijinja**: Template engine for string interpolation
 - **glob**: File pattern matching (build-time)
 
 ## Error Handling
 
-SuperTOML provides detailed error messages for common issues:
-
-- **File not found**: Clear indication when TOML files can't be read
-- **Parse errors**: Detailed TOML syntax error reporting
-- **Table not found**: Specific table name in error message
-- **Type mismatches**: Clear indication when expected table is different type
-- **Cycle detection**: Prevents infinite loops with descriptive error
-- **Plugin errors**: Plugin-specific error reporting with context
+SuperTOML provides detailed error messages for file I/O, TOML parsing, table resolution, circular dependencies, plugin errors, and template errors.
 
 ## Project Structure
 
@@ -448,68 +334,32 @@ supertoml/
 │   ├── loader.rs        # TOML loading utilities
 │   ├── formatter.rs     # Output formatting
 │   ├── resolver.rs      # Core resolution logic
+│   ├── utils.rs         # Shared utilities
 │   └── plugins/         # Plugin implementations
-│       ├── mod.rs       # Plugin module exports
-│       ├── noop.rs      # Example noop plugin
-│       └── reference.rs # Example reference plugin with recursive resolution
 ├── tests/
-│   ├── toml_tests.rs          # Test framework
-│   └── toml_test_cases/       # Test case definitions
-├── build.rs            # Build script for test generation
-├── Cargo.toml          # Project configuration
-└── mise.toml          # Tool version specification
+│   ├── toml_tests.rs    # Integration tests
+│   ├── cli_tests.rs     # CLI tests
+│   ├── readme_validation.rs # README validation tests
+│   └── toml_test_cases/ # Test case files
+├── Cargo.toml           # Project configuration
+├── README.md            # User documentation
+└── DEVELOPMENT.md       # This file
 ```
 
 ## Build Script
 
-The `build.rs` script automatically generates integration tests from TOML files in `tests/toml_test_cases/`. This ensures all test cases are automatically included when new test files are added.
+The `build.rs` script automatically generates integration tests from TOML files in `tests/toml_test_cases/`.
 
 ## Adding New Features
 
 ### Adding a New Output Format
 
-To add a new output format (e.g., YAML, XML), follow these steps:
-
-1. **Add to CLI enum**: Add the new format to the `OutputFormat` enum in `src/main.rs`
-2. **Implement formatter**: Add a `format_as_<format>` function in `src/formatter.rs`
-3. **Export from library**: Add the new function to the exports in `src/lib.rs`
-4. **Add CLI integration**: Add a new match arm in the `run` function in `src/main.rs`
-5. **Add README documentation**: Add an example output section in the "Advanced Features Example" in `README.md`
-6. **Add test validation**: Add the new format to the `get_output_formats()` function in `tests/readme_validation.rs` with appropriate start/end markers
-7. **Test the implementation**: Run `cargo test` to ensure all tests pass
-
-**Example for adding YAML format:**
-```rust
-// In src/formatter.rs
-pub fn format_as_yaml(values: &HashMap<String, toml::Value>) -> Result<String, SuperTomlError> {
-    // Implementation here
-}
-
-// In src/lib.rs
-pub use formatter::{
-    format_as_dotenv, format_as_exports, format_as_json, format_as_tfvars, format_as_toml, format_as_yaml,
-};
-
-// In src/main.rs OutputFormat enum
-#[derive(Clone, Debug, ValueEnum)]
-enum OutputFormat {
-    Toml,
-    Json,
-    Dotenv,
-    Exports,
-    Tfvars,
-    Yaml, // Add here
-}
-
-// In tests/readme_validation.rs get_output_formats()
-OutputFormat {
-    name: "yaml",
-    format_fn: format_as_yaml,
-    start_marker: "For YAML output:\n\n```bash\nsupertoml app.toml prod --output yaml\n```\n\n**Output:**\n```yaml\n",
-    end_marker: "\n```\n\nFor [next format]:",
-    assert_fn: assert_string_equivalent, // or custom assertion function
-},
-```
+1. Add the format to the `OutputFormat` enum in `src/main.rs`
+2. Implement the formatting logic in `src/formatter.rs`
+3. Export the new function from `src/lib.rs`
+4. Add CLI integration in the `run` function
+5. Add README documentation and test validation
+6. Run tests to ensure everything works
 
 ### Other Features
 
@@ -538,9 +388,11 @@ This design allows plugins to access the resolver for recursive resolution while
 Potential areas for expansion:
 - Configuration file support for default plugins
 - Streaming support for large TOML files
-- Environment variable substitution
 - Additional output formats (YAML, XML, etc.)
 - Plugin configuration validation
+- Enhanced meta values (additional processing context)
+- Template caching for performance
+- Plugin dependency management
 
 ## License
 
@@ -712,6 +564,10 @@ Some areas where contributions are particularly welcome:
 - **Documentation** - Improvements to docs, examples, tutorials
 - **Testing** - Additional test cases, edge case coverage
 - **Error handling** - Better error messages, more specific error types
+- **Meta values enhancements** - Additional processing context
+- **Template functions** - New built-in template functions
+- **Plugin ecosystem** - Community plugin registry
+- **IDE support** - Language server, syntax highlighting
 
 ### Getting Help
 

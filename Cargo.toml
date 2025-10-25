@@ -11,6 +11,7 @@ toml = "0.8"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 minijinja = "1.0"
+strum = { version = "0.26", features = ["derive"] }
 
 [build-dependencies]
 glob = "0.3"

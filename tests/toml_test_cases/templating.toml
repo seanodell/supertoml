@@ -4,51 +4,154 @@ description = "Test that jinja templates in string values are processed correctl
 table = "app_config"
 
 [app_config]
-static_value = "this should not change"
-number_value = 42
-boolean_value = true
+# Basic variables
+app_name = "SuperTOML"
+version = "1.0.0"
+description = "A powerful TOML processing tool"
+status = "active"
+port = 8080
+debug = true
 
-# Minijinja features without variables
-uppercase_text = "{{ 'hello world' | upper }}"
-lowercase_text = "{{ 'HELLO WORLD' | lower }}"
-title_case = "{{ 'hello world' | title }}"
-trimmed_text = "{{ '  hello world  ' | trim }}"
-replaced_text = "{{ 'hello world' | replace('hello', 'goodbye') }}"
-length_text = "{{ 'hello world' | length }}"
-conditional_text = "{% if true %}This is true{% else %}This is false{% endif %}"
-loop_text = "{% for i in range(1, 4) %}{{ i }}{% if not loop.last %}, {% endif %}{% endfor %}"
-complex_text = "{{ 'hello' | upper }} {{ 'WORLD' | lower }} - Count: {% for i in range(3) %}{{ i + 1 }}{% endfor %}"
+# String manipulation using variables
+app_name_upper = "{{ app_name | upper }}"
+app_name_lower = "{{ app_name | lower }}"
+app_name_title = "{{ app_name | title }}"
+description_trimmed = "{{ description | trim }}"
+description_replaced = "{{ description | replace('TOML', 'Configuration') }}"
+app_name_length = "{{ app_name | length }}"
+
+# Advanced string manipulation
+app_name_contains = "{{ 'TOML' in app_name }}"
+app_name_capitalize = "{{ app_name | capitalize }}"
+app_name_strip = "{{ '  ' + app_name + '  ' | trim }}"
+app_name_join = "{{ [app_name, version] | join('-') }}"
+app_name_escape = "{{ app_name | escape }}"
+app_name_safe = "{{ app_name | safe }}"
+app_name_concatenate = "{{ app_name + ' v' + version }}"
+app_name_multiple_replace = "{{ app_name | replace('T', 'X') | replace('M', 'Y') }}"
+app_name_conditional_upper = "{{ app_name | upper if debug else app_name }}"
+app_name_chain_filters = "{{ app_name | lower | capitalize }}"
+
+# String manipulation using variables
+app_name_first_three = "{{ app_name[:3] }}"
+app_name_last_three = "{{ app_name[-3:] }}"
+app_name_middle = "{{ app_name[2:6] }}"
+app_name_reversed = "{{ app_name | reverse }}"
+
+# Conditional logic using variables
+if_debug_enabled = "{% if debug %}Debug mode is ON{% else %}Debug mode is OFF{% endif %}"
+if_port_high = "{% if port > 5000 %}High port number{% else %}Low port number{% endif %}"
+if_version_major = "{% if version[:1] == '1' %}Version 1.x{% else %}Not version 1.x{% endif %}"
+if_name_contains = "{% if 'TOML' in app_name %}Contains TOML{% else %}Does not contain TOML{% endif %}"
+if_description_long = "{% if description | length > 10 %}Long description{% else %}Short description{% endif %}"
+
+# Complex combinations
+debug_info = "{{ app_name | upper }} v{{ version }} - {% if debug %}DEBUG{% else %}PROD{% endif %}"
+port_info = "{% if port > 5000 %}High port: {{ port }}{% else %}Low port: {{ port }}{% endif %}"
+name_slice_upper = "{{ app_name[2:6] | upper }}"
+conditional_slice = "{% if app_name | length > 5 %}{{ app_name[:5] }}{% else %}{{ app_name }}{% endif %}"
+
+# Variable assignment examples
+assigned_upper = "{% set upper_name = app_name | upper %}{{ upper_name }}"
+assigned_slice = "{% set short_name = app_name[:5] %}{{ short_name }}"
+assigned_conditional = "{% set mode = 'DEBUG' if debug else 'PROD' %}{{ mode }}"
+assigned_calculated = "{% set double_port = port * 2 %}{{ double_port }}"
+assigned_combined = "{% set info = app_name + ' v' + version %}{{ info }}"
+
+# Loop examples with variables
+status_check = "{% for i in range(3) %}Status: {{ status }}{% if not loop.last %}, {% endif %}{% endfor %}"
+number_sequence = "{% for i in range(1, 4) %}{{ i }}{% if not loop.last %}, {% endif %}{% endfor %}"
 
 [expected.toml]
 content = '''
-boolean_value = true
-complex_text = "HELLO world - Count: 123"
-conditional_text = "This is true"
-length_text = "11"
-loop_text = "1, 2, 3"
-lowercase_text = "hello world"
-number_value = 42
-replaced_text = "goodbye world"
-static_value = "this should not change"
-title_case = "Hello World"
-trimmed_text = "hello world"
-uppercase_text = "HELLO WORLD"
+app_name = "SuperTOML"
+app_name_capitalize = "Supertoml"
+app_name_chain_filters = "Supertoml"
+app_name_concatenate = "SuperTOML v1.0.0"
+app_name_conditional_upper = "SUPERTOML"
+app_name_contains = "true"
+app_name_escape = "SuperTOML"
+app_name_first_three = "Sup"
+app_name_join = "SuperTOML-1.0.0"
+app_name_last_three = "OML"
+app_name_length = "9"
+app_name_lower = "supertoml"
+app_name_middle = "perT"
+app_name_multiple_replace = "SuperXOYL"
+app_name_reversed = "LMOTrepuS"
+app_name_safe = "SuperTOML"
+app_name_strip = "  SuperTOML"
+app_name_title = "Supertoml"
+app_name_upper = "SUPERTOML"
+assigned_calculated = "16160"
+assigned_combined = "SuperTOML v1.0.0"
+assigned_conditional = "DEBUG"
+assigned_slice = "Super"
+assigned_upper = "SUPERTOML"
+conditional_slice = "Super"
+debug = true
+debug_info = "SUPERTOML v1.0.0 - DEBUG"
+description = "A powerful TOML processing tool"
+description_replaced = "A powerful Configuration processing tool"
+description_trimmed = "A powerful TOML processing tool"
+if_debug_enabled = "Debug mode is ON"
+if_description_long = "Long description"
+if_name_contains = "Contains TOML"
+if_port_high = "High port number"
+if_version_major = "Version 1.x"
+name_slice_upper = "PERT"
+number_sequence = "1, 2, 3"
+port = 8080
+port_info = "High port: 8080"
+status = "active"
+status_check = "Status: active, Status: active, Status: active"
+version = "1.0.0"
 '''
 
 [expected.json]
 content = '''
 {
-  "boolean_value": true,
-  "complex_text": "HELLO world - Count: 123",
-  "conditional_text": "This is true",
-  "length_text": "11",
-  "loop_text": "1, 2, 3",
-  "lowercase_text": "hello world",
-  "number_value": 42,
-  "replaced_text": "goodbye world",
-  "static_value": "this should not change",
-  "title_case": "Hello World",
-  "trimmed_text": "hello world",
-  "uppercase_text": "HELLO WORLD"
+  "app_name": "SuperTOML",
+  "app_name_capitalize": "Supertoml",
+  "app_name_chain_filters": "Supertoml",
+  "app_name_concatenate": "SuperTOML v1.0.0",
+  "app_name_conditional_upper": "SUPERTOML",
+  "app_name_contains": "true",
+  "app_name_escape": "SuperTOML",
+  "app_name_first_three": "Sup",
+  "app_name_join": "SuperTOML-1.0.0",
+  "app_name_last_three": "OML",
+  "app_name_length": "9",
+  "app_name_lower": "supertoml",
+  "app_name_middle": "perT",
+  "app_name_multiple_replace": "SuperXOYL",
+  "app_name_reversed": "LMOTrepuS",
+  "app_name_safe": "SuperTOML",
+  "app_name_strip": "  SuperTOML",
+  "app_name_title": "Supertoml",
+  "app_name_upper": "SUPERTOML",
+  "assigned_calculated": "16160",
+  "assigned_combined": "SuperTOML v1.0.0",
+  "assigned_conditional": "DEBUG",
+  "assigned_slice": "Super",
+  "assigned_upper": "SUPERTOML",
+  "conditional_slice": "Super",
+  "debug": true,
+  "debug_info": "SUPERTOML v1.0.0 - DEBUG",
+  "description": "A powerful TOML processing tool",
+  "description_replaced": "A powerful Configuration processing tool",
+  "description_trimmed": "A powerful TOML processing tool",
+  "if_debug_enabled": "Debug mode is ON",
+  "if_description_long": "Long description",
+  "if_name_contains": "Contains TOML",
+  "if_port_high": "High port number",
+  "if_version_major": "Version 1.x",
+  "name_slice_upper": "PERT",
+  "number_sequence": "1, 2, 3",
+  "port": 8080,
+  "port_info": "High port: 8080",
+  "status": "active",
+  "status_check": "Status: active, Status: active, Status: active",
+  "version": "1.0.0"
 }
 '''

@@ -1,0 +1,83 @@
+[test]
+name = "Underscore context"
+description = "Test that _ object is available in templates for accessing processing context"
+table = "app_config"
+
+[app_config]
+# Test accessing processing context using _ object
+table_name = "{{ _.args.table_name }}"
+output_format = "{{ _.args.output_format }}"
+file_path = "{{ _.args.file_path }}"
+
+# Test combining with filters
+formatted_table = "{{ _.args.table_name | upper }}"
+formatted_format = "{{ _.args.output_format | upper }}"
+
+# Test conditional logic with meta values (will be toml in test runner)
+is_json_output = "{% if _.args.output_format == 'json' %}true{% else %}false{% endif %}"
+is_toml_output = "{% if _.args.output_format == 'toml' %}true{% else %}false{% endif %}"
+
+# Test combining with other variables (if any exist)
+debug_info = "Processing {{ _.args.table_name }} from {{ _.args.file_path }}"
+
+[expected.toml]
+content = '''
+debug_info = "Processing app_config from meta_values.toml"
+file_path = "meta_values.toml"
+formatted_format = "TOML"
+formatted_table = "APP_CONFIG"
+is_json_output = "false"
+is_toml_output = "true"
+output_format = "toml"
+table_name = "app_config"
+'''
+
+[expected.json]
+content = '''
+{
+  "debug_info": "Processing app_config from meta_values.toml",
+  "file_path": "meta_values.toml",
+  "formatted_format": "JSON",
+  "formatted_table": "APP_CONFIG",
+  "is_json_output": "true",
+  "is_toml_output": "false",
+  "output_format": "json",
+  "table_name": "app_config"
+}
+'''
+
+[expected.dotenv]
+content = '''
+debug_info=Processing app_config from meta_values.toml
+file_path=meta_values.toml
+formatted_format=DOTENV
+formatted_table=APP_CONFIG
+is_json_output=false
+is_toml_output=false
+output_format=dotenv
+table_name=app_config
+'''
+
+[expected.exports]
+content = '''
+export "debug_info=Processing app_config from meta_values.toml"
+export "file_path=meta_values.toml"
+export "formatted_format=EXPORTS"
+export "formatted_table=APP_CONFIG"
+export "is_json_output=false"
+export "is_toml_output=false"
+export "output_format=exports"
+export "table_name=app_config"
+'''
+
+[expected.tfvars]
+content = '''
+debug_info = "Processing app_config from meta_values.toml"
+file_path = "meta_values.toml"
+formatted_format = "TFVARS"
+formatted_table = "APP_CONFIG"
+is_json_output = "false"
+is_toml_output = "false"
+output_format = "tfvars"
+table_name = "app_config"
+'''

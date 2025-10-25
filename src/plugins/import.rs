@@ -1,7 +1,8 @@
 use crate::{
     extract_config,
     utils::{
-        add_values_to_resolver, create_template_environment, template_error, toml_value_to_jinja,
+        add_values_to_resolver, create_template_environment_with_meta, template_error,
+        toml_value_to_jinja,
     },
     Plugin, SuperTomlError,
 };
@@ -68,7 +69,12 @@ impl ImportPlugin {
         for (key, value) in table_data {
             let final_key = if let Some(ref key_format) = import_config.key_format {
                 // Transform the key using minijinja
-                self.transform_key_with_template(key, key_format, &resolver.values)?
+                self.transform_key_with_template(
+                    key,
+                    key_format,
+                    &resolver.values,
+                    &resolver.meta_values,
+                )?
             } else {
                 key.clone()
             };
@@ -115,8 +121,9 @@ impl ImportPlugin {
         key: &str,
         template: &str,
         context: &HashMap<String, toml::Value>,
+        meta_values: &HashMap<String, toml::Value>,
     ) -> Result<String, SuperTomlError> {
-        let env = create_template_environment();
+        let env = create_template_environment_with_meta(meta_values.clone());
 
         // Create template context with the key variable
         let mut template_context = HashMap::new();
@@ -125,6 +132,11 @@ impl ImportPlugin {
         // Add resolver context
         for (k, v) in context {
             template_context.insert(k.clone(), toml_value_to_jinja(v));
+        }
+
+        // Add the _ object to the template context
+        if let Some(underscore_value) = meta_values.get("_") {
+            template_context.insert("_".to_string(), toml_value_to_jinja(underscore_value));
         }
 
         let template_obj = env

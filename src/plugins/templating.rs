@@ -1,6 +1,7 @@
 use crate::{
     utils::{
-        add_values_to_resolver, create_template_environment, template_error, toml_value_to_jinja,
+        add_values_to_resolver, create_template_environment_with_meta, template_error,
+        toml_value_to_jinja,
     },
     Plugin, SuperTomlError,
 };
@@ -12,14 +13,20 @@ pub struct TemplatingPlugin;
 fn process_value_with_jinja(
     value: &toml::Value,
     context: &HashMap<String, toml::Value>,
+    meta_values: &HashMap<String, toml::Value>,
     plugin_name: &str,
 ) -> Result<toml::Value, SuperTomlError> {
-    let env = create_template_environment();
+    let env = create_template_environment_with_meta(meta_values.clone());
 
-    let context_jinja: HashMap<String, JinjaValue> = context
+    let mut context_jinja: HashMap<String, JinjaValue> = context
         .iter()
         .map(|(k, v)| (k.clone(), toml_value_to_jinja(v)))
         .collect();
+
+    // Add the _ object to the template context (but exclude it from output)
+    if let Some(underscore_value) = meta_values.get("_") {
+        context_jinja.insert("_".to_string(), toml_value_to_jinja(underscore_value));
+    }
 
     match value {
         toml::Value::String(s) => {
@@ -41,7 +48,7 @@ fn process_value_with_jinja(
             // Recursively process each element in the array
             let processed_arr: Result<Vec<toml::Value>, SuperTomlError> = arr
                 .iter()
-                .map(|item| process_value_with_jinja(item, context, plugin_name))
+                .map(|item| process_value_with_jinja(item, context, meta_values, plugin_name))
                 .collect();
             Ok(toml::Value::Array(processed_arr?))
         }
@@ -49,7 +56,8 @@ fn process_value_with_jinja(
             // Recursively process each value in the table
             let mut processed_table = toml::Table::new();
             for (key, val) in table {
-                let processed_val = process_value_with_jinja(val, context, plugin_name)?;
+                let processed_val =
+                    process_value_with_jinja(val, context, meta_values, plugin_name)?;
                 processed_table.insert(key.clone(), processed_val);
             }
             Ok(toml::Value::Table(processed_table))
@@ -72,8 +80,12 @@ impl Plugin for TemplatingPlugin {
         let processed_values: HashMap<String, toml::Value> = table_values
             .iter()
             .map(|(key, value)| {
-                let processed_value =
-                    process_value_with_jinja(value, &resolver.values, self.name())?;
+                let processed_value = process_value_with_jinja(
+                    value,
+                    &resolver.values,
+                    &resolver.meta_values,
+                    self.name(),
+                )?;
                 Ok((key.clone(), processed_value))
             })
             .collect::<Result<HashMap<_, _>, SuperTomlError>>()?;

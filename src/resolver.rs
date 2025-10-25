@@ -39,6 +39,7 @@ pub struct Resolver {
     pub call_stack: Vec<String>,
     pub toml_file: Option<toml::Value>,
     pub file_path: Option<String>,
+    pub meta_values: HashMap<String, toml::Value>,
 }
 
 impl Resolver {
@@ -49,6 +50,7 @@ impl Resolver {
             call_stack: Vec::new(),
             toml_file: None,
             file_path: None,
+            meta_values: HashMap::new(),
         }
     }
 
@@ -59,6 +61,58 @@ impl Resolver {
     ) -> Result<HashMap<String, toml::Value>, SuperTomlError> {
         self.file_path = Some(file_path.to_string());
         self.toml_file = Some(load_toml_file(file_path)?);
+
+        // Populate meta values with processing context as nested TOML structure
+        let mut args_map = toml::map::Map::new();
+        args_map.insert(
+            "file_path".to_string(),
+            toml::Value::String(file_path.to_string()),
+        );
+        args_map.insert(
+            "table_name".to_string(),
+            toml::Value::String(table_name.to_string()),
+        );
+
+        let mut underscore_map = toml::map::Map::new();
+        underscore_map.insert("args".to_string(), toml::Value::Table(args_map));
+
+        self.meta_values
+            .insert("_".to_string(), toml::Value::Table(underscore_map));
+
+        resolve_table_recursive(self, table_name)?;
+        Ok(std::mem::take(&mut self.values))
+    }
+
+    pub fn resolve_table_with_meta(
+        &mut self,
+        file_path: &str,
+        table_name: &str,
+        output_format: &str,
+    ) -> Result<HashMap<String, toml::Value>, SuperTomlError> {
+        self.file_path = Some(file_path.to_string());
+        self.toml_file = Some(load_toml_file(file_path)?);
+
+        // Populate meta values with processing context as nested TOML structure
+        let mut args_map = toml::map::Map::new();
+        args_map.insert(
+            "file_path".to_string(),
+            toml::Value::String(file_path.to_string()),
+        );
+        args_map.insert(
+            "table_name".to_string(),
+            toml::Value::String(table_name.to_string()),
+        );
+        args_map.insert(
+            "output_format".to_string(),
+            toml::Value::String(output_format.to_string()),
+        );
+
+        let mut underscore_map = toml::map::Map::new();
+        underscore_map.insert("args".to_string(), toml::Value::Table(args_map));
+
+        self.meta_values
+            .insert("_".to_string(), toml::Value::Table(underscore_map));
+
         resolve_table_recursive(self, table_name)?;
         Ok(std::mem::take(&mut self.values))
     }
