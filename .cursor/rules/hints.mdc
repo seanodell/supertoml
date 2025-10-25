@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+
+Files in .cursor/rules are rules for the cursor IDE to follow, not documentation.
+
+Files in .cursor/commands are /slash commands for the cursor IDE, not documentation (even when they end in .md).
