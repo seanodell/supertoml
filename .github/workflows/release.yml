@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [main_release]
+    branches: [main]
 
 permissions:
   contents: write
@@ -62,5 +62,6 @@ jobs:
           files: packages/**/*
           draft: false
           prerelease: false
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
