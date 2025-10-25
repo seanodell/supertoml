@@ -2,6 +2,13 @@
 
 A powerful command-line tool for extracting and processing TOML configuration data with support for multiple output formats.
 
+## Additional Documentation
+
+- [REFERENCE.md](REFERENCE.md) - Complete plugin and feature reference
+- [CHANGELOG.md](CHANGELOG.md) - Version history and changes
+- [BUILDING.md](BUILDING.md) - Build instructions and development setup
+- [DEVELOPMENT.md](DEVELOPMENT.md) - Development guidelines and workflows
+
 ## What is SuperTOML?
 
 SuperTOML extracts specific tables from TOML files and outputs them in various formats (TOML, JSON, dotenv, shell exports, Terraform variables). It's perfect for:
