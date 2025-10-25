@@ -1,6 +1,8 @@
 use clap::{Parser, ValueEnum};
+use strum::{Display, EnumString};
 
-#[derive(Clone, Debug, ValueEnum)]
+#[derive(Clone, Debug, ValueEnum, Display, EnumString)]
+#[strum(serialize_all = "lowercase")]
 enum OutputFormat {
     Toml,
     Json,
@@ -74,7 +76,8 @@ fn run(args: &Args) -> Result<String, supertoml::SuperTomlError> {
         .and_then(|n| n.to_str())
         .unwrap_or(&args.file);
 
-    let resolved_values = resolver.resolve_table(filename, &args.table)?;
+    let resolved_values =
+        resolver.resolve_table_with_meta(filename, &args.table, &args.output.to_string())?;
 
     match args.output {
         OutputFormat::Toml => supertoml::format_as_toml(&resolved_values),

@@ -8,8 +8,6 @@ app_name = "test-app"
 version = "2.0.0"
 debug = false
 
-_.noop = { message = "Noop plugin executed", enabled = true }
-
 [expected.toml]
 content = '''
 app_name = "test-app"
