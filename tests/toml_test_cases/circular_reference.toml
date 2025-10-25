@@ -6,12 +6,12 @@ expected_error = "Cycle detected"
 
 [table_a]
 key1 = "value1"
-_.reference = { table = "table_b", prefix = "b_" }
+_.before = ["table_b"]
 
 [table_b]
 key2 = "value2"
-_.reference = { table = "table_c", prefix = "c_" }
+_.before = ["table_c"]
 
 [table_c]
 key3 = "value3"
-_.reference = { table = "table_a", prefix = "a_" }
+_.before = ["table_a"]

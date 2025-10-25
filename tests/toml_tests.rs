@@ -1,11 +1,6 @@
+use std::process::Command;
 use supertoml::loader::load_toml_file;
-use supertoml::plugins::{
-    AfterPlugin, BeforePlugin, ImportPlugin, NoopPlugin, ReferencePlugin, TemplatingPlugin,
-};
-use supertoml::{
-    format_as_dotenv, format_as_exports, format_as_json, format_as_toml, Plugin, Resolver,
-    SuperTomlError,
-};
+use supertoml::SuperTomlError;
 
 #[derive(Debug)]
 struct TestCase {
@@ -75,6 +70,32 @@ fn load_test_case(test_file: &str) -> Result<TestCase, SuperTomlError> {
     })
 }
 
+fn run_supertoml_cli(test_file: &str, table: &str, format: &str) -> Result<String, String> {
+    // Find the supertoml binary in the target directory
+    let target_dir = std::env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| "target".to_string());
+    let supertoml_bin = if cfg!(target_os = "windows") {
+        format!("{}/debug/supertoml.exe", target_dir)
+    } else {
+        format!("{}/debug/supertoml", target_dir)
+    };
+
+    let output = Command::new(&supertoml_bin)
+        .arg(test_file)
+        .arg(table)
+        .arg("--output")
+        .arg(format)
+        .output()
+        .map_err(|e| format!("Failed to execute supertoml: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(stderr.to_string());
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(stdout.to_string())
+}
+
 fn run_test_file(test_file: &str) {
     let test_case = load_test_case(test_file)
         .unwrap_or_else(|e| panic!("Failed to load test case {}: {}", test_file, e));
@@ -84,44 +105,33 @@ fn run_test_file(test_file: &str) {
         test_case.name, test_case.description
     );
 
-    let mut resolver = Resolver::new(vec![
-        &BeforePlugin as &dyn Plugin,
-        &ImportPlugin as &dyn Plugin,
-        &ReferencePlugin as &dyn Plugin,
-        &TemplatingPlugin as &dyn Plugin,
-        &AfterPlugin as &dyn Plugin,
-        &NoopPlugin as &dyn Plugin,
-    ]);
-
-    let result = resolver.resolve_table(test_file, &test_case.table);
-
     if let Some(expected_error) = &test_case.expected_error {
+        // Test error cases by running supertoml and checking stderr
+        let result = run_supertoml_cli(test_file, &test_case.table, "toml");
         match result {
             Ok(_) => panic!(
                 "Expected error matching '{}' but got success",
                 expected_error
             ),
             Err(e) => {
-                let error_str = e.to_string();
                 if !regex::Regex::new(expected_error)
                     .expect("Invalid regex pattern in test")
-                    .is_match(&error_str)
+                    .is_match(&e)
                 {
                     panic!(
                         "Error '{}' does not match expected pattern '{}'",
-                        error_str, expected_error
+                        e, expected_error
                     );
                 }
             }
         }
     } else {
-        let resolved_values = result.expect(&format!(
-            "Failed to resolve table '{}' from {}",
-            test_case.table, test_file
-        ));
-
+        // Test successful cases by running supertoml for each expected format
         if let Some(expected) = test_case.expected_toml {
-            let actual = format_as_toml(&resolved_values).expect("Failed to format as TOML");
+            let actual = run_supertoml_cli(test_file, &test_case.table, "toml").expect(&format!(
+                "Failed to resolve table '{}' from {}",
+                test_case.table, test_file
+            ));
             assert_eq!(
                 actual.trim(),
                 expected,
@@ -131,7 +141,10 @@ fn run_test_file(test_file: &str) {
         }
 
         if let Some(expected) = test_case.expected_json {
-            let actual = format_as_json(&resolved_values).expect("Failed to format as JSON");
+            let actual = run_supertoml_cli(test_file, &test_case.table, "json").expect(&format!(
+                "Failed to resolve table '{}' from {}",
+                test_case.table, test_file
+            ));
             assert_eq!(
                 actual.trim(),
                 expected,
@@ -141,7 +154,10 @@ fn run_test_file(test_file: &str) {
         }
 
         if let Some(expected) = test_case.expected_dotenv {
-            let actual = format_as_dotenv(&resolved_values).expect("Failed to format as dotenv");
+            let actual = run_supertoml_cli(test_file, &test_case.table, "dotenv").expect(&format!(
+                "Failed to resolve table '{}' from {}",
+                test_case.table, test_file
+            ));
             assert_eq!(
                 actual.trim(),
                 expected,
@@ -151,7 +167,11 @@ fn run_test_file(test_file: &str) {
         }
 
         if let Some(expected) = test_case.expected_exports {
-            let actual = format_as_exports(&resolved_values).expect("Failed to format as exports");
+            let actual =
+                run_supertoml_cli(test_file, &test_case.table, "exports").expect(&format!(
+                    "Failed to resolve table '{}' from {}",
+                    test_case.table, test_file
+                ));
             assert_eq!(
                 actual.trim(),
                 expected,

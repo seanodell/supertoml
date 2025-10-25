@@ -10,7 +10,7 @@ version = "1.0.0"
 # Import database configuration with db_ prefix
 # Import tools configuration with tool_ prefix
 _.import = [
-    { file = "mise.toml", table = "tools", key_format = "tool_{{key}}" }
+    { file = "../../mise.toml", table = "tools", key_format = "tool_{{key}}" }
 ]
 
 # These values should be available after import and can be templated

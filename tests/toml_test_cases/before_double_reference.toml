@@ -18,5 +18,5 @@ _.before = ["table_a"]
 [expected.toml]
 content = '''
 f = "a"
-t = "b"
+t = "a"
 '''

@@ -40,11 +40,12 @@ pub fn add_values_to_resolver(
     }
 }
 
-/// Create a shared Minijinja environment for template processing
+/// Create a Minijinja environment with access to resolver metadata
 ///
-/// This ensures consistent template environment setup across all plugins
-/// that need templating functionality. Custom functions are registered here.
-pub fn create_template_environment() -> Environment<'static> {
+/// This version includes the meta function for accessing processing context.
+pub fn create_template_environment_with_meta(
+    _meta_values: HashMap<String, toml::Value>,
+) -> Environment<'static> {
     let mut env = Environment::new();
 
     // Add custom function to access environment variables
@@ -61,6 +62,8 @@ pub fn create_template_environment() -> Environment<'static> {
     env.add_function("env_or", |name: String, default: String| -> String {
         std::env::var(&name).unwrap_or(default)
     });
+
+    // Note: _ object will be added to template context during processing
 
     env
 }
@@ -127,7 +130,7 @@ mod tests {
 
     #[test]
     fn test_custom_env_or_function() {
-        let env = create_template_environment();
+        let env = create_template_environment_with_meta(HashMap::new());
 
         // Test env_or with default value
         let template = env
@@ -142,7 +145,7 @@ mod tests {
         // Set a test environment variable
         std::env::set_var("TEST_VAR_12345", "test_value");
 
-        let env = create_template_environment();
+        let env = create_template_environment_with_meta(HashMap::new());
         let template = env
             .template_from_str("{{ env_or('TEST_VAR_12345', 'default') }}")
             .unwrap();
@@ -155,11 +158,56 @@ mod tests {
 
     #[test]
     fn test_custom_env_function_error() {
-        let env = create_template_environment();
+        let env = create_template_environment_with_meta(HashMap::new());
         let template = env
             .template_from_str("{{ env('NONEXISTENT_VAR_12345') }}")
             .unwrap();
         let result = template.render(());
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_underscore_context() {
+        let mut meta_values = HashMap::new();
+        let mut args_map = toml::map::Map::new();
+        args_map.insert(
+            "table_name".to_string(),
+            toml::Value::String("test_table".to_string()),
+        );
+        args_map.insert(
+            "file_path".to_string(),
+            toml::Value::String("config.toml".to_string()),
+        );
+        args_map.insert(
+            "output_format".to_string(),
+            toml::Value::String("json".to_string()),
+        );
+
+        let mut underscore_map = toml::map::Map::new();
+        underscore_map.insert("args".to_string(), toml::Value::Table(args_map));
+        meta_values.insert("_".to_string(), toml::Value::Table(underscore_map));
+
+        let env = create_template_environment_with_meta(meta_values.clone());
+
+        // Create template context with _ object
+        let mut template_context = HashMap::new();
+        if let Some(underscore_value) = meta_values.get("_") {
+            template_context.insert("_".to_string(), toml_value_to_jinja(underscore_value));
+        }
+
+        // Test accessing _.args.table_name
+        let template = env.template_from_str("{{ _.args.table_name }}").unwrap();
+        let result = template.render(&template_context);
+        assert_eq!(result.unwrap(), "test_table");
+
+        // Test accessing _.args.file_path
+        let template = env.template_from_str("{{ _.args.file_path }}").unwrap();
+        let result = template.render(&template_context);
+        assert_eq!(result.unwrap(), "config.toml");
+
+        // Test accessing _.args.output_format
+        let template = env.template_from_str("{{ _.args.output_format }}").unwrap();
+        let result = template.render(&template_context);
+        assert_eq!(result.unwrap(), "json");
     }
 }
