@@ -2,7 +2,7 @@ name: Pre-merge Checks
 
 on:
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 permissions:
   contents: read
@@ -19,7 +19,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install pre-commit
         run: |
@@ -32,7 +32,5 @@ jobs:
   build-and-test:
     name: Build and Test All Platforms
     uses: ./.github/workflows/build-and-test.yml
-    with:
-      create_release: false
     permissions:
       contents: read
