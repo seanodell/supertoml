@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2025-10-25
+
+### Added
+- Added metadata context object (`_`) available in all template expressions with three properties:
+  - `_.file_path`: The path to the current source TOML file being processed
+  - `_.table_name`: The name of the current table being processed
+  - `_.output_format`: The output format specified on the command line (json, toml, exports, tfvars)
+- Added comprehensive REFERENCE.md documentation covering all plugins, features, and usage patterns
+
 ## [0.6.0] - 2025-10-10
 
 ### Fixed
