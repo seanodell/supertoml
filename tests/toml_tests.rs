@@ -71,15 +71,11 @@ fn load_test_case(test_file: &str) -> Result<TestCase, SuperTomlError> {
 }
 
 fn run_supertoml_cli(test_file: &str, table: &str, format: &str) -> Result<String, String> {
-    // Find the supertoml binary in the target directory
-    let target_dir = std::env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| "target".to_string());
-    let supertoml_bin = if cfg!(target_os = "windows") {
-        format!("{}/debug/supertoml.exe", target_dir)
-    } else {
-        format!("{}/debug/supertoml", target_dir)
-    };
+    // Use Cargo's built-in mechanism to find the binary under test
+    // CARGO_BIN_EXE_supertoml is set by Cargo when running integration tests
+    let supertoml_bin = env!("CARGO_BIN_EXE_supertoml");
 
-    let output = Command::new(&supertoml_bin)
+    let output = Command::new(supertoml_bin)
         .arg(test_file)
         .arg(table)
         .arg("--output")

@@ -362,6 +362,7 @@ api_secret_key = "sk-1234567890abcdef"
 # These values come from the imported mise.toml file
 rust_version = "{{ tool_rust }}"
 act_version = "{{ tool_act }}"
+gh_version = "{{ tool_gh }}"
 
 _.after = ["final"]
 
@@ -409,6 +410,7 @@ debug = false
 deployment_name = "prod_myapp"
 environment = "prod"
 full_config_path = "/etc/myapp/prod/prod/config.json"
+gh_version = "latest"
 is_production = "false"
 log_level = "info"
 namespace = "prod"
@@ -416,6 +418,7 @@ replica_count = "3"
 rust_version = "1.89.0"
 services = ["PROD-MyApp-web", "PROD-MyApp-worker", "PROD-MyApp-scheduler"]
 tool_act = "latest"
+tool_gh = "latest"
 tool_pre-commit = "3.7.0"
 tool_rust = "1.89.0"
 
@@ -437,6 +440,7 @@ supertoml app.toml prod --output json
 {
   "act_version": "latest",
   "api_endpoint": "https://api.prod.example.com:443/v1",
+  "gh_version": "latest",
   "api_host": "api.prod.example.com",
   "api_port": 443,
   "api_secret_key": "sk-1234567890abcdef",
@@ -469,6 +473,7 @@ supertoml app.toml prod --output json
     "PROD-MyApp-scheduler"
   ],
   "tool_act": "latest",
+  "tool_gh": "latest",
   "tool_pre-commit": "3.7.0",
   "tool_rust": "1.89.0"
 }
@@ -484,6 +489,7 @@ supertoml app.toml prod --output dotenv
 ```
 act_version=latest
 api_endpoint=https://api.prod.example.com:443/v1
+gh_version=latest
 api_host=api.prod.example.com
 api_port=443
 api_secret_key=sk-1234567890abcdef
@@ -507,6 +513,7 @@ replica_count=3
 rust_version=1.89.0
 services=["PROD-MyApp-web","PROD-MyApp-worker","PROD-MyApp-scheduler"]
 tool_act=latest
+tool_gh=latest
 tool_pre-commit=3.7.0
 tool_rust=1.89.0
 ```
@@ -521,6 +528,7 @@ supertoml app.toml prod --output exports
 ```bash
 export "act_version=latest"
 export "api_endpoint=https://api.prod.example.com:443/v1"
+export "gh_version=latest"
 export "api_host=api.prod.example.com"
 export "api_port=443"
 export "api_secret_key=sk-1234567890abcdef"
@@ -544,6 +552,7 @@ export "replica_count=3"
 export "rust_version=1.89.0"
 export "services=[\"PROD-MyApp-web\",\"PROD-MyApp-worker\",\"PROD-MyApp-scheduler\"]"
 export "tool_act=latest"
+export "tool_gh=latest"
 export "tool_pre-commit=3.7.0"
 export "tool_rust=1.89.0"
 ```
@@ -558,6 +567,7 @@ supertoml app.toml prod --output tfvars
 ```hcl
 act_version = "latest"
 api_endpoint = "https://api.prod.example.com:443/v1"
+gh_version = "latest"
 api_host = "api.prod.example.com"
 api_port = 443
 api_secret_key = "sk-1234567890abcdef"
@@ -581,6 +591,7 @@ replica_count = "3"
 rust_version = "1.89.0"
 services = ["PROD-MyApp-web", "PROD-MyApp-worker", "PROD-MyApp-scheduler"]
 tool_act = "latest"
+tool_gh = "latest"
 tool_pre-commit = "3.7.0"
 tool_rust = "1.89.0"
 ```
