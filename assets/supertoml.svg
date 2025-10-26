@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 80 500 360" xmlns:bx="https://boxy-svg.com">
+  <defs>
+    <linearGradient id="color-0" bx:pinned="true" gradientUnits="userSpaceOnUse">
+      <stop style="stop-color: rgb(0, 0, 0);"/>
+    </linearGradient>
+    <linearGradient id="color-1" bx:pinned="true" gradientUnits="userSpaceOnUse">
+      <stop style="stop-color: rgb(35, 157, 255);"/>
+    </linearGradient>
+    <linearGradient id="color-2" bx:pinned="true" gradientUnits="userSpaceOnUse">
+      <stop style="stop-color: rgb(171, 171, 171);"/>
+    </linearGradient>
+    <linearGradient id="color-3" bx:pinned="true" gradientUnits="userSpaceOnUse">
+      <stop style="stop-color: rgb(23, 196, 25);"/>
+    </linearGradient>
+    <linearGradient id="color-4" bx:pinned="true" gradientUnits="userSpaceOnUse">
+      <stop style="stop-color: rgb(168, 255, 169);"/>
+    </linearGradient>
+    <linearGradient id="color-5" bx:pinned="true" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1.773393, 0, 0, 0.961119, 21.678759, 456.233271)">
+      <stop style="stop-color: rgb(255, 250, 240);"/>
+    </linearGradient>
+    <linearGradient id="color-6" bx:pinned="true" gradientUnits="userSpaceOnUse">
+      <stop style="stop-color: rgb(156, 67, 32);"/>
+    </linearGradient>
+    <bx:export>
+      <bx:file format="png" path="supertoml.png" antialiasing="false"/>
+    </bx:export>
+  </defs>
+  <rect x="-0.242" y="126.626" width="498.447" height="270.142" style="stroke: rgb(0, 0, 0); fill: url(&quot;#color-5&quot;); stroke-opacity: 0;"/>
+  <g transform="matrix(1.48714, 0, 0, 1.417807, 1024.519531, 148.56987)" style="">
+    <text style="fill: url(&quot;#color-6&quot;); font-family: Arial; font-size: 326.2px; font-weight: 700; letter-spacing: -20px; word-spacing: -100px; white-space: pre;" transform="matrix(0.36755, 0, 0, 0.414624, -678.316345, -87.708588)" x="-5.463" y="347.815"><title>Blue Text</title>{</text>
+    <text style="fill: url(&quot;#color-6&quot;); font-family: Arial; font-size: 326.2px; font-weight: 700; letter-spacing: -20px; word-spacing: -100px; white-space: pre;" transform="matrix(0.36755, 0, 0, 0.414624, -647.430176, -87.627235)" x="-5.463" y="347.815"><title>Blue Text</title>{</text>
+  </g>
+  <g transform="matrix(-1.48714, 0, 0, -1.417807, 1051.7771, 317.926453)" style="transform-origin: -631.629px 22.7028px;">
+    <text style="fill: url(&quot;#color-6&quot;); font-family: Arial; font-size: 326.2px; font-weight: 700; letter-spacing: -20px; word-spacing: -100px; white-space: pre;" transform="matrix(0.36755, 0, 0, 0.414624, -678.316345, -87.708588)" x="-5.463" y="347.815"><title>Blue Text</title>{</text>
+    <text style="fill: url(&quot;#color-6&quot;); font-family: Arial; font-size: 326.2px; font-weight: 700; letter-spacing: -20px; word-spacing: -100px; white-space: pre;" transform="matrix(0.36755, 0, 0, 0.414624, -647.430176, -87.627235)" x="-5.463" y="347.815"><title>Blue Text</title>{</text>
+  </g>
+  <g transform="matrix(1, 0, 0, 1, -37, 12.519764)">
+    <text style="fill: url(&quot;#color-0&quot;); font-family: Arial; font-size: 326.2px; font-weight: 700; letter-spacing: -20px; word-spacing: -100px; white-space: pre;" transform="matrix(0.768618, 0, 0, 0.919373, 272.315582, 34.693287)" x="-5.463" y="347.815">T</text>
+    <text style="fill: url(&quot;#color-0&quot;); font-family: Arial; font-size: 326.2px; font-weight: 700; letter-spacing: -20px; word-spacing: -100px; white-space: pre;" transform="matrix(0.768618, 0, 0, 0.919373, 82.901253, -21.418238)" x="-5.463" y="347.815">_</text>
+    <text style="fill: url(&quot;#color-0&quot;); font-family: Arial; font-size: 326.2px; font-weight: 700; letter-spacing: -20px; word-spacing: -100px; white-space: pre;" transform="matrix(0.768618, 0, 0, 0.919373, 238.488449, 37.921978)" x="-5.463" y="347.815">.</text>
+  </g>
+</svg>
